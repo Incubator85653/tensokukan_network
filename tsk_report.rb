@@ -140,7 +140,7 @@ begin
   CLIENT_LATEST_VERSION_PATH = env['client']['latest_version']['path'].to_s
   CLIENT_SITE_URL = "http://#{env['client']['site']['host']}#{env['client']['site']['path']}"
 
-  ### クライアント最新バージョンチェック ###
+  ### Check updates ###
 
   # puts "★クライアント最新バージョン自動チェック"
   # puts 
@@ -177,6 +177,7 @@ begin
       # puts 
     end
     
+  # Print a message if update check was failed
   rescue => ex
     puts "！クライアント最新バージョン自動チェック中にエラーが発生しました。"
     puts ex.to_s
@@ -187,14 +188,20 @@ begin
     puts
   end
     
-  ### メイン処理 ###
+  ### Main part of program ###
+  # int main(){} lol;
 
-  ## オプション設定
+  ## Set options
   opt = OptionParser.new
 
-  opt.on('-a') {|v| is_all_report = true} # 全件報告モード
+  # If '-a' was specified
+  # Mark upload all mode to true
+  opt.on('-a') {|v| is_all_report = true}
 
+  # Meaning unknown, keep original comments
   # 設定ファイルのゲームID設定を有効にする
+  
+  # If '-g' was specified
   opt.on('-g') do |v|
     begin
       game_id = config['game']['id'].to_i
@@ -209,7 +216,8 @@ begin
     puts "★設定ファイルのゲームID（#{game_id}）で報告を実行します"  
   end
 
-  # 設定ファイルのデータベースファイルパスをデフォルトに戻す
+  # If '--database-filepath-default-overwrite' was specified
+  # Reset database path to default
   opt.on('--database-filepath-default-overwrite') do |v|  
     puts "★設定ファイルの#{RECORD_SW_NAME}DBファイルパスを上書きします"  
     puts "#{config_file} の#{RECORD_SW_NAME}DBファイルパスを #{DEFAULT_DATABASE_FILE_PATH} に書き換え..."  
@@ -222,7 +230,7 @@ begin
 
   opt.parse!(ARGV)
 
-  ## アカウント設定（新規アカウント登録／既存アカウント設定）処理
+  ## Account settings (login / register)
   unless (account_name && account_name =~ ACCOUNT_NAME_REGEX) then
     is_new_account = nil
     account_name = ''
@@ -258,7 +266,7 @@ begin
       puts "★新規 #{WEB_SERVICE_NAME} アカウント登録\n\n"  
       
       while (!is_account_register_finish)
-        # アカウント名入力
+	    # Enter account name
         puts "希望アカウント名を入力してください\n"  
         puts "アカウント名はURLの一部として使用されます。\n"  
         puts "（半角英数とアンダースコア_のみ使用可能。32文字以内）\n"  
@@ -275,7 +283,7 @@ begin
           end
         end
         
-        # パスワード入力
+        # Enter password
         puts "パスワードを入力してください（使用文字制限なし。4～16byte以内。アカウント名と同一禁止。）\n"  
         print "パスワード> "  
         while (input = gets)
@@ -301,7 +309,7 @@ begin
           end
         end
         
-        # メールアドレス入力
+        # Enter email address
         puts "メールアドレスを入力してください（入力は任意）\n"  
         puts "※パスワードを忘れたときの連絡用にのみ使用します。\n"  
         puts "※記入しない場合、パスワードの連絡はできません。\n"  
@@ -314,7 +322,14 @@ begin
             puts
             break
           elsif input =~ MAIL_ADDRESS_REGEX and input.length <= 256 then
-            account_mail_address = input
+		    # Fix a potential problem
+			
+			# The script used to be hang up... I'm not sure
+			# If a user Enter some uppercase after @ symbol
+			# Few user met the problem and have not starting to debug
+			
+			# Since Tsk 2017 build 1
+            account_mail_address = input.downcase
             puts
             break
           else
@@ -323,7 +338,7 @@ begin
           end
         end
         
-        # 新規アカウントをサーバーに登録
+        # Register new account on server
         puts "サーバーにアカウントを登録しています...\n"  
         
         # アカウント XML 生成
