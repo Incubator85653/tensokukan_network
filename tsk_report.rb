@@ -37,7 +37,7 @@ MAIL_ADDRESS_REGEX = /\A[\x01-\x7F]+@(([-a-z0-9]+\.)*[a-z]+|\[\d{1,3}\.\d{1,3}\.
 PLEASE_RETRY_FORCE_INSERT = "<Please Retry in Force-Insert Mode>"
 
 # HTTP header, a hash variable.
-# Muse be include a the "tenco" domain info
+# Muse be include the "tenco" domain info
 HTTP_REQUEST_HEADER = {"User-Agent" => "Tensokukan Report Tool #{PROGRAM_VERSION}"}
 
 # Software name
@@ -341,14 +341,14 @@ begin
         # Register new account on server
         puts "サーバーにアカウントを登録しています...\n"  
         
-        # アカウント XML 生成
+        # Generate Account XML
         account_xml = REXML::Document.new
         account_xml << REXML::XMLDecl.new('1.0', 'UTF-8')
         account_element = account_xml.add_element("account")
         account_element.add_element('name').add_text(account_name)
         account_element.add_element('password').add_text(account_password)
         account_element.add_element('mail_address').add_text(account_mail_address)
-        # サーバーに送信
+        # Upload to server
         response = nil
         # http = Net::HTTP.new(SERVER_ACCOUNT_HOST, 443)
         # http.use_ssl = true
@@ -364,7 +364,7 @@ begin
         end
 
         if response.code == '200' then
-        # アカウント登録成功時
+        # Account registration success:
           is_account_register_finish = true
           config['account']['name'] = account_name
           config['account']['password'] = account_password
@@ -381,7 +381,7 @@ begin
           puts "引き続き、対戦結果の報告をします..."
           puts
         else
-        # アカウント登録失敗時
+        # Account registration failure:
           puts "もう一度アカウント登録をやり直します...\n\n"
           sleep 1
         end
@@ -395,7 +395,7 @@ begin
       puts 
       puts "お持ちの #{WEB_SERVICE_NAME} アカウント名を入力してください"
       
-      # アカウント名入力
+      # Enter account name
       print "アカウント名> "
       while (input = gets)
         input.strip!
@@ -409,7 +409,7 @@ begin
         print "アカウント名> "
       end
       
-      # パスワード入力
+      # Enter password
       puts "パスワードを入力してください\n"
       print "パスワード> "
       while (input = gets)
@@ -424,7 +424,7 @@ begin
         print "パスワード> "
       end
       
-      # 設定ファイル保存
+      # Save account to config
       config['account']['name'] = account_name
       config['account']['password'] = account_password
       save_config(config_file, config)
@@ -439,7 +439,7 @@ begin
   end
 
     
-  ## 登録済みの最終対戦結果時刻を取得する
+  ## Get the account-based latest upload time from server
   unless is_all_report then
     puts "★登録済みの最終対戦時刻を取得"
     puts "GET http://#{SERVER_LAST_TRACK_RECORD_HOST}#{SERVER_LAST_TRACK_RECORD_PATH}?game_id=#{game_id}&account_name=#{account_name}"
@@ -467,12 +467,12 @@ begin
   end
   puts
 
-  ## 対戦結果報告処理
+  ## Upload the match results
   puts "★対戦結果送信"
   puts ("#{RECORD_SW_NAME}の記録から、" + last_report_time.strftime('%Y/%m/%d %H:%M:%S') + " 以降の対戦結果を報告します。")
   puts
 
-  # DBから対戦結果を取得
+  # Get the match results from database
   db_files = Dir::glob(NKF.nkf('-Wsxm0 --cp932', db_file_path))
 
   if db_files.length > 0
@@ -489,27 +489,28 @@ begin
 
   puts
 
-  ## 報告対象データの送信処理
+  ## The uploading process
 
-  # 報告対象データが0件なら送信しない
+  # Don't upload if queue is empty
   if trackrecord.length == 0 then
     puts "報告対象データはありませんでした。"
   else
     
-    # 対戦結果データを分割して送信
+    # Split the match results and send to server
     0.step(trackrecord.length, TRACKRECORD_POST_SIZE) do |start_row_num|
       end_row_num = [start_row_num + TRACKRECORD_POST_SIZE - 1, trackrecord.length - 1].min
       response = nil # サーバーからのレスポンスデータ
       
       puts "#{trackrecord.length}件中の#{start_row_num + 1}件目～#{end_row_num + 1}件目を送信しています#{is_force_insert ? "（強制インサートモード）" : ""}...\n"
       
-      # 送信用XML生成
+      # Generate XML to upload
       trackrecord_xml_string = trackrecord2xml_string(game_id, account_name, account_password, trackrecord[start_row_num..end_row_num], is_force_insert)
       File.open('./last_report_trackrecord.xml', 'w') do |w|
         w.puts trackrecord_xml_string
       end
 
-      # データ送信
+      # Upload
+	  
       # https = Net::HTTP.new(SERVER_TRACK_RECORD_HOST, 443)
       # https.use_ssl = true
       # https.verify_mode = OpenSSL::SSL::VERIFY_NONE
@@ -522,7 +523,7 @@ begin
         response = s.post(SERVER_TRACK_RECORD_PATH, trackrecord_xml_string, HTTP_REQUEST_HEADER)
       end
       
-      # 送信結果表示
+      # Display upload result from server
       puts "サーバーからのお返事"
       response.body.each_line do |line|
         puts "> #{line}"
@@ -531,6 +532,7 @@ begin
       
       if response.code == '200' then
         sleep 1
+		# Meaning unknown code, keep original comments
         # 特に表示しない
       else
         if response.body.index(PLEASE_RETRY_FORCE_INSERT)
@@ -545,12 +547,12 @@ begin
     end
   end
 
-  # 設定ファイル更新
+  # Update configuration file
   save_config(config_file, config)
       
   puts
 
-  # 終了メッセージ出力
+  # Exit message output
   if is_warning_exist then
     puts "報告処理は正常に終了しましたが、警告メッセージがあります。"
     puts "出力結果をご確認ください。"
@@ -564,7 +566,7 @@ begin
 
   sleep 3
 
-### 全体エラー処理 ###
+### Overall error handling ###
 rescue => ex
   if config && config['account'] then
     config['account']['name']     = '<secret>' if config['account']['name']
