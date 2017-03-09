@@ -15,38 +15,68 @@ require './lib/tenco_reporter/track_record_util'
 include TencoReporter::TrackRecordUtil
 require './lib/tenco_reporter/stdout_to_cp932_converter'
 
-# プログラム情報
+# Program information
 PROGRAM_VERSION = '0.04'
 PROGRAM_NAME = '天則観報告ツール'
 
-# 設定
-TRACKRECORD_POST_SIZE = 250   # 一度に送信する対戦結果数
-DUPLICATION_LIMIT_TIME_SECONDS = 2   # タイムスタンプが何秒以内のデータを、重複データとみなすか
+# Environment / configuration
+
+# Number of match results to be sent at once
+TRACKRECORD_POST_SIZE = 250
+
+# The match results data whose timestamp is
+# within the seconds, will be regarded as duplicate data
+DUPLICATION_LIMIT_TIME_SECONDS = 2
+
+# Vaild account name and email address characters
+# Mail address check is a regular expression
 ACCOUNT_NAME_REGEX = /\A[a-zA-Z0-9_]{1,32}\z/
-MAIL_ADDRESS_REGEX = /\A[\x01-\x7F]+@(([-a-z0-9]+\.)*[a-z]+|\[\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\])\z/ # メールアドレスチェック用正規表現
-PLEASE_RETRY_FORCE_INSERT = "<Please Retry in Force-Insert Mode>"  # 強制インサートリトライのお願い文字列
+MAIL_ADDRESS_REGEX = /\A[\x01-\x7F]+@(([-a-z0-9]+\.)*[a-z]+|\[\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\])\z/
+
+# Notification when "force insert mode" is required
+PLEASE_RETRY_FORCE_INSERT = "<Please Retry in Force-Insert Mode>"
+
+# HTTP header, a hash variable.
+# Muse be include a the "tenco" domain info
 HTTP_REQUEST_HEADER = {"User-Agent" => "Tensokukan Report Tool #{PROGRAM_VERSION}"}
-RECORD_SW_NAME = '天則観' # 対戦記録ソフトウェア名
-DB_TR_TABLE_NAME = 'trackrecord123' # DBの対戦結果テーブル名
-WEB_SERVICE_NAME = 'Tenco!'  # サーバ側のサービス名
 
-# デフォルト値
-DEFAULT_GAME_ID = 2    # ゲームID
-DEFAULT_DATABASE_FILE_PATH = '../*.db' # データベースファイルパス
+# Software name
+RECORD_SW_NAME = '天則観'
+# DB match result table name
+DB_TR_TABLE_NAME = 'trackrecord123'
+# Service provider name
+WEB_SERVICE_NAME = 'Tenco!'
 
-# ログファイルパス
+# Tensokukan specified profile
+
+# Game code
+DEFAULT_GAME_ID = 2
+# Default db file path
+DEFAULT_DATABASE_FILE_PATH = '../*.db'
+
+# Log file path
 ERROR_LOG_PATH = 'error.txt'
 
-# 送信設定
-is_force_insert = false # 強制インサートモード。はじめは false。
-is_all_report = false # 全件報告モード。サーバーからの最終対戦時刻をとらず、全件送信。
+# Upload settings
 
-# 変数
-latest_version = nil # クライアントの最新バージョン
-trackrecord = [] # 対戦結果
+# Forced insert mode. Set to false when getting started
+is_force_insert = false
+# Upload all mode
+is_all_report = false
+
+# Variables that changeable during execute
+
+# Get the latest client version from server
+latest_version = nil
+# Match result
+trackrecord = []
+
+# Meaning unknown variables, keep original comments
 is_read_trackrecord_warning = false # 対戦結果読み込み時に警告があったかどうか
 is_warning_exist = false # 警告メッセージがあるかどうか
 
+# Print program name and version and something else
+# at the very beginning
 puts "*** #{PROGRAM_NAME} ***"
 puts "ver.#{PROGRAM_VERSION}\n\n"
 
