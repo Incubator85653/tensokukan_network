@@ -82,14 +82,14 @@ puts "ver.#{PROGRAM_VERSION}\n\n"
 
 begin
 
-  ### 設定読み込み ###
+  ### Load config ###
 
-  # 設定ファイルパス
+  # Set config file path
   config_file = 'config.yaml'
   config_default_file = 'config_default.yaml'
   env_file = 'env.yaml'
 
-  # 設定ファイルがなければデフォルトをコピーして作成
+  #If tsk net config was missing, create an empty one from template
   unless File.exist?(config_file) then
     open(config_default_file) do |s|
       open(config_file, "w") do |d|
@@ -98,15 +98,17 @@ begin
     end
   end
 
-  # サーバー環境設定ファイルがなければ、エラー終了
+  # If tsk net environment config was missing, raise an error
   unless File.exist?(env_file) then
     raise "#{env_file} が見つかりません。\nダウンロードした本プログラムのフォルダからコピーしてください。"
   end
 
-  # 設定ファイル読み込み
+  # Read config to RAM
   config = load_config(config_file) 
   env    = load_config(env_file)
-      
+  
+  # Meaning unknown, keep original comments
+  
   # config.yaml がおかしいと代入時にエラーが出ることに対する格好悪い対策
   config ||= {}
   config['account'] ||= {}
@@ -114,7 +116,9 @@ begin
 
   account_name = config['account']['name'].to_s || ''
   account_password = config['account']['password'].to_s || ''
-
+  
+  # Meaning unknown, keep original comments
+  
   # ゲームIDを設定ファイルから読み込む機能は -g オプションが必要
   game_id = DEFAULT_GAME_ID
   db_file_path = config['database']['file_path'].to_s || DEFAULT_DATABASE_FILE_PATH
@@ -124,6 +128,8 @@ begin
   # last_report_time = config['last_report_time']
   # IS_USE_HTTPS = false
 
+  
+  # Seems these variables were used to find server.
   SERVER_TRACK_RECORD_HOST = env['server']['track_record']['host'].to_s
   SERVER_TRACK_RECORD_PATH = env['server']['track_record']['path'].to_s
   SERVER_LAST_TRACK_RECORD_HOST = env['server']['last_track_record']['host'].to_s
