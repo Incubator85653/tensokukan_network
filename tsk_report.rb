@@ -15,48 +15,6 @@ require './lib/tenco_reporter/track_record_util'
 include TencoReporter::TrackRecordUtil
 require './lib/tenco_reporter/stdout_to_cp932_converter'
 
-# Program information
-PROGRAM_VERSION = '0.04'
-PROGRAM_NAME = '天則観報告ツール'
-
-# Environment / configuration
-
-# Number of match results to be sent at once
-TRACKRECORD_POST_SIZE = 250
-
-# The match results data whose timestamp is
-# within the seconds, will be regarded as duplicate data
-DUPLICATION_LIMIT_TIME_SECONDS = 2
-
-# Vaild account name and email address characters
-# Mail address check is a regular expression
-ACCOUNT_NAME_REGEX = /\A[a-zA-Z0-9_]{1,32}\z/
-MAIL_ADDRESS_REGEX = /\A[\x01-\x7F]+@(([-a-z0-9]+\.)*[a-z]+|\[\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\])\z/
-
-# Notification when "force insert mode" is required
-PLEASE_RETRY_FORCE_INSERT = "<Please Retry in Force-Insert Mode>"
-
-# HTTP header, a hash variable.
-# Muse be include the "tenco" domain info
-HTTP_REQUEST_HEADER = {"User-Agent" => "Tensokukan Report Tool #{PROGRAM_VERSION}"}
-
-# Software name
-RECORD_SW_NAME = '天則観'
-# DB match result table name
-DB_TR_TABLE_NAME = 'trackrecord123'
-# Service provider name
-WEB_SERVICE_NAME = 'Tenco!'
-
-# Tensokukan specified profile
-
-# Game code
-DEFAULT_GAME_ID = 2
-# Default db file path
-DEFAULT_DATABASE_FILE_PATH = '../*.db'
-
-# Log file path
-ERROR_LOG_PATH = 'error.txt'
-
 # Upload settings
 
 # Forced insert mode. Set to false when getting started
@@ -75,40 +33,47 @@ trackrecord = []
 is_read_trackrecord_warning = false # 対戦結果読み込み時に警告があったかどうか
 is_warning_exist = false # 警告メッセージがあるかどうか
 
+### Load config ###
+
+# Set config file path
+config_file = 'config.yaml'
+config_default_file = 'config_default.yaml'
+env_file = 'env.yaml'
+var_file = 'variables.yaml'
+
+# If tsk net config file was missing, raise an error
+unless (File.exist?(env_file) && File.exist?(var_file) && File.exist?(config_file))
+  puts "Error: one or more config files were missing"
+  # Print all the config status on screen to help debug
+  puts config_file
+  puts File.exist?(config_file)
+  puts env_file
+  puts File.exist?(env_file)
+  puts var_file
+  puts File.exist?(var_file)
+  puts "Press Enter to exit."
+  
+  gets
+  exit
+end
+
+# Read config to RAM
+config = load_config(config_file) 
+env  = load_config(env_file)
+variables  = load_config(var_file)
+
+# HTTP header, a hash variable.
+# Muse be include the "tenco" domain info
+# TODO: Add this domain header
+HTTP_REQUEST_HEADER = {"User-Agent" => "Tensokukan Report Tool #{variables['PROGRAM_VERSION']}"}
+
 # Print program name and version and something else
 # at the very beginning
-puts "*** #{PROGRAM_NAME} ***"
-puts "ver.#{PROGRAM_VERSION}\n\n"
+puts "*** #{variables['PROGRAM_NAME']} ***"
+puts "ver.#{variables['PROGRAM_VERSION']}\n\n\n"
 
 begin
-
-  ### Load config ###
-
-  # Set config file path
-  config_file = 'config.yaml'
-  config_default_file = 'config_default.yaml'
-  env_file = 'env.yaml'
-
-  #If tsk net config was missing, create an empty one from template
-  unless File.exist?(config_file) then
-    open(config_default_file) do |s|
-      open(config_file, "w") do |d|
-        d.write(s.read)
-      end
-    end
-  end
-
-  # If tsk net environment config was missing, raise an error
-  unless File.exist?(env_file) then
-    raise "#{env_file} が見つかりません。\nダウンロードした本プログラムのフォルダからコピーしてください。"
-  end
-
-  # Read config to RAM
-  config = load_config(config_file) 
-  env    = load_config(env_file)
-  
   # Meaning unknown, keep original comments
-  
   # config.yaml がおかしいと代入時にエラーが出ることに対する格好悪い対策
   config ||= {}
   config['account'] ||= {}
@@ -187,7 +152,12 @@ begin
     puts "スキップして処理を続行します。"
     puts
   end
-    
+  
+  # TODO
+  # Put a exit command to stop program keep running
+  exit
+  
+  
   ### Main part of program ###
   # int main(){} lol;
 
