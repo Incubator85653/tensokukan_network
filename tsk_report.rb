@@ -23,7 +23,7 @@ is_force_insert = false
 # Upload all mode
 is_all_report = false
 # Detect update check
-updateCheck = false
+updateCheck = true
 # New account?
 is_new_account = false
 
@@ -69,15 +69,15 @@ $variables = load_config(var_file)
 HTTP_REQUEST_HEADER = {"User-Agent" => "Tensokukan Report Tool #{$variables['PROGRAM_VERSION']}"}
 
   # Seems these variables were used to find server.
-SERVER_TRACK_RECORD_HOST = $env['server']['track_record']['host'].to_s
-SERVER_TRACK_RECORD_PATH = $env['server']['track_record']['path'].to_s
-SERVER_LAST_TRACK_RECORD_HOST = $env['server']['last_track_record']['host'].to_s
-SERVER_LAST_TRACK_RECORD_PATH = $env['server']['last_track_record']['path'].to_s
-SERVER_ACCOUNT_HOST = $env['server']['account']['host'].to_s
-SERVER_ACCOUNT_PATH = $env['server']['account']['path'].to_s
-CLIENT_LATEST_VERSION_HOST = $env['client']['latest_version']['host'].to_s
-CLIENT_LATEST_VERSION_PATH = $env['client']['latest_version']['path'].to_s
-CLIENT_SITE_URL = "http://#{$env['client']['site']['host']}#{$env['client']['site']['path']}"
+$SERVER_TRACK_RECORD_HOST = $env['server']['track_record']['host'].to_s
+$SERVER_TRACK_RECORD_PATH = $env['server']['track_record']['path'].to_s
+$SERVER_LAST_TRACK_RECORD_HOST = $env['server']['last_track_record']['host'].to_s
+$SERVER_LAST_TRACK_RECORD_PATH = $env['server']['last_track_record']['path'].to_s
+$SERVER_ACCOUNT_HOST = $env['server']['account']['host'].to_s
+$SERVER_ACCOUNT_PATH = $env['server']['account']['path'].to_s
+$CLIENT_LATEST_VERSION_HOST = $env['client']['latest_version']['host'].to_s
+$CLIENT_LATEST_VERSION_PATH = $env['client']['latest_version']['path'].to_s
+$CLIENT_SITE_URL = "http://#{$env['client']['site']['host']}#{$env['client']['site']['path']}"
 
 # Print program name and version and something else
 # at the very beginning
@@ -91,7 +91,7 @@ def detectExistAccount()
 end
 def doUpdateCheck()
   begin
-    latest_version = get_latest_version(CLIENT_LATEST_VERSION_HOST, CLIENT_LATEST_VERSION_PATH)
+    latest_version = get_latest_version($CLIENT_LATEST_VERSION_HOST, $CLIENT_LATEST_VERSION_PATH)
     
     case
     when latest_version.nil?
@@ -106,7 +106,7 @@ def doUpdateCheck()
         puts "スキップして続行します。"
         puts 
       else
-        system "start #{CLIENT_SITE_URL}"
+        system "start #{$CLIENT_SITE_URL}"
         exit
       end
     when latest_version <= $variables['PROGRAM_VERSION'] then
@@ -310,12 +310,12 @@ begin
         account_element.add_element('mail_address').add_text(account_mail_address)
         # Upload to server
         response = nil
-        # http = Net::HTTP.new(SERVER_ACCOUNT_HOST, 443)
+        # http = Net::HTTP.new($SERVER_ACCOUNT_HOST, 443)
         # http.use_ssl = true
         # http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-        http = Net::HTTP.new(SERVER_ACCOUNT_HOST, 80)
+        http = Net::HTTP.new($SERVER_ACCOUNT_HOST, 80)
         http.start do |s|
-          response = s.post(SERVER_ACCOUNT_PATH, account_xml.to_s, HTTP_REQUEST_HEADER)
+          response = s.post($SERVER_ACCOUNT_PATH, account_xml.to_s, HTTP_REQUEST_HEADER)
         end
         
         print "サーバーからのお返事\n"  
@@ -402,12 +402,12 @@ begin
   ## Get the account-based latest upload time from server
   unless is_all_report then
     puts "★登録済みの最終対戦時刻を取得"
-    puts "GET http://#{SERVER_LAST_TRACK_RECORD_HOST}#{SERVER_LAST_TRACK_RECORD_PATH}?game_id=#{game_id}&account_name=#{account_name}"
+    puts "GET http://#{$SERVER_LAST_TRACK_RECORD_HOST}#{$SERVER_LAST_TRACK_RECORD_PATH}?game_id=#{game_id}&account_name=#{account_name}"
 
-    http = Net::HTTP.new(SERVER_LAST_TRACK_RECORD_HOST, 80)
+    http = Net::HTTP.new($SERVER_LAST_TRACK_RECORD_HOST, 80)
     response = nil
     http.start do |s|
-      response = s.get("#{SERVER_LAST_TRACK_RECORD_PATH}?game_id=#{game_id}&account_name=#{account_name}", HTTP_REQUEST_HEADER)
+      response = s.get("#{$SERVER_LAST_TRACK_RECORD_PATH}?game_id=#{game_id}&account_name=#{account_name}", HTTP_REQUEST_HEADER)
     end
 
     if response.code == '200' or response.code == '204' then
@@ -471,16 +471,16 @@ begin
 
       # Upload
 	  
-      # https = Net::HTTP.new(SERVER_TRACK_RECORD_HOST, 443)
+      # https = Net::HTTP.new($SERVER_TRACK_RECORD_HOST, 443)
       # https.use_ssl = true
       # https.verify_mode = OpenSSL::SSL::VERIFY_NONE
-      # https = Net::HTTP::Proxy(proxy_addr, proxy_port).new(SERVER_TRACK_RECORD_HOST,443)
+      # https = Net::HTTP::Proxy(proxy_addr, proxy_port).new($SERVER_TRACK_RECORD_HOST,443)
       # https.ca_file = '/usr/share/ssl/cert.pem'
       # https.verify_depth = 5
       # https.verify_mode = OpenSSL::SSL::VERIFY_PEER
-      http = Net::HTTP.new(SERVER_TRACK_RECORD_HOST, 80)
+      http = Net::HTTP.new($SERVER_TRACK_RECORD_HOST, 80)
       http.start do |s|
-        response = s.post(SERVER_TRACK_RECORD_PATH, trackrecord_xml_string, HTTP_REQUEST_HEADER)
+        response = s.post($SERVER_TRACK_RECORD_PATH, trackrecord_xml_string, HTTP_REQUEST_HEADER)
       end
       
       # Display upload result from server
