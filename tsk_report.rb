@@ -20,7 +20,9 @@ require './lib/tenco_reporter/config_locale'
 $is_force_insert = false # Forced insert mode. Set to false when getting started
 $is_all_report = false # Upload all mode
 $updateCheck = true # Detect update check
-$is_new_account = false # New account?
+$is_new_account = false # New account or login
+$accountSignedUp = false # Detect if there is a account signed up
+$is_account_register_finish = false # Detect if there is a account signed up
 
 # Match result
 $trackrecord = []
@@ -32,21 +34,21 @@ $is_warning_exist = false # 警告メッセージがあるかどうか
 ### Load config ###
 
 # Set config file path
-config_file = 'config.yaml'
-config_default_file = 'config_default.yaml'
-env_file = 'env.yaml'
-var_file = 'variables.yaml'
+$config_file = 'config.yaml'
+$config_default_file = 'config_default.yaml'
+$env_file = 'env.yaml'
+$var_file = 'variables.yaml'
 
 # If tsk net config file was missing, print an error and exit program.
-unless (File.exist?(env_file) && File.exist?(var_file) && File.exist?(config_file))
+unless (File.exist?($env_file) && File.exist?($var_file) && File.exist?($config_file))
   puts "Error: one or more config files were missing"
   # Print all the config status on screen to help debugging
-  puts config_file
-  puts File.exist?(config_file)
-  puts env_file
-  puts File.exist?(env_file)
-  puts var_file
-  puts File.exist?(var_file)
+  puts $config_file
+  puts File.exist?($config_file)
+  puts $env_file
+  puts File.exist?($env_file)
+  puts $var_file
+  puts File.exist?($var_file)
   puts "Press Enter to exit."
   
   gets
@@ -54,24 +56,55 @@ unless (File.exist?(env_file) && File.exist?(var_file) && File.exist?(config_fil
 end
 
 # Read config to RAM
-$config = load_config(config_file) 
-$env = load_config(env_file)
-$variables = load_config(var_file)
+$config = load_config($config_file) 
+$env = load_config($env_file)
+$variables = load_config($var_file)
 
-  # Seems these variables were used to find server.
+# Seems these variables were used to find server.
+# SERVER_TRACK_RECORD
 $SERVER_TRACK_RECORD_HOST = $env['server']['track_record']['host'].to_s
+$SERVER_TRACK_RECORD_ADDRESS = $env['server']['track_record']['address'].to_s
+$SERVER_TRACK_RECORD_PORT = $env['server']['track_record']['port'].to_s
 $SERVER_TRACK_RECORD_PATH = $env['server']['track_record']['path'].to_s
+# SERVER_LAST_TRACK_RECORD
 $SERVER_LAST_TRACK_RECORD_HOST = $env['server']['last_track_record']['host'].to_s
+$SERVER_LAST_TRACK_RECORD_ADDRESS = $env['server']['last_track_record']['address'].to_s
+$SERVER_LAST_TRACK_RECORD_PORT = $env['server']['last_track_record']['port'].to_s
 $SERVER_LAST_TRACK_RECORD_PATH = $env['server']['last_track_record']['path'].to_s
+# SERVER_ACCOUNT
 $SERVER_ACCOUNT_HOST = $env['server']['account']['host'].to_s
+$SERVER_ACCOUNT_ADDRESS = $env['server']['account']['address'].to_s
+$SERVER_ACCOUNT_PORT = $env['server']['account']['port'].to_s
 $SERVER_ACCOUNT_PATH = $env['server']['account']['path'].to_s
+# CLIENT_LATEST_VERSION
 $CLIENT_LATEST_VERSION_HOST = $env['client']['latest_version']['host'].to_s
+$CLIENT_LATEST_VERSION_ADDRESS = $env['client']['latest_version']['address'].to_s
+$CLIENT_LATEST_VERSION_PORT = $env['client']['latest_version']['port'].to_s
 $CLIENT_LATEST_VERSION_PATH = $env['client']['latest_version']['path'].to_s
+# CLIENT_SITE_URL
 $CLIENT_SITE_URL = "http://#{$env['client']['site']['host']}#{$env['client']['site']['path']}"
-# HTTP header, a hash variable.
-# Muse be include the "tenco" domain info
-# TODO: Add this domain header
-$HTTP_REQUEST_HEADER = {"User-Agent" => "Tensokukan Report Tool #{$variables['PROGRAM_VERSION']}"}
+# Default HTTP request header
+$HTTP_REQUEST_HEADER = $variables['HTTP_REQUEST_HEADER'][0]
+# Two different request header for obfs4 forward server.
+$HTTP_REQUEST_HEADER_MAIN = $variables['HTTP_OBFS4_REQUEST_HEADER'][0]
+$HTTP_REQUEST_HEADER_STATIC = $variables['HTTP_OBFS4_REQUEST_HEADER'][1]
+# Vaild account name and email address characters, regular expression
+$ACCOUNT_NAME_REGEX = /\A[a-zA-Z0-9_]{1,32}\z/
+$MAIL_ADDRESS_REGEX = /\A[\x01-\x7F]+@(([-a-z0-9]+\.)*[a-z]+|\[\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\])\z/
+
+# User account and password
+$account_name = ""
+$account_password = ""
+
+# Database file path
+$db_file_path = $config['database']['file_path'].to_s || DEFAULT_DATABASE_FILE_PATH
+  
+# Tenco service edition(tenco.info/2, /5 etc)
+$game_id = $variables['DEFAULT_GAME_ID']
+
+
+
+###################################################
 # Environments were loaded, below are program code.
 ###################################################
   
@@ -124,52 +157,234 @@ def doUpdateCheck()
     puts
   end
 end
+def doAccountSignUp()
+  # 空两行
+  puts "★新規 #{WEB_SERVICE_NAME} アカウント登録\n\n"
+    
+  # While loop until successful signed up
+  while (!$is_account_register_finish)
+  # Enter account name
+    puts "希望アカウント名を入力してください\n"  
+    puts "アカウント名はURLの一部として使用されます。\n"  
+    puts "（半角英数とアンダースコア_のみ使用可能。32文字以内）\n"  
+    print "希望アカウント名> "  
+    while (input = gets)
+      input.strip!
+      if input =~ $ACCOUNT_NAME_REGEX then
+        $account_name = input
+        puts 
+        break
+      else
+        puts "！希望アカウント名は半角英数とアンダースコア_のみで、32文字以内で入力してください"  
+        print "希望アカウント名> "  
+      end
+    end
+    
+    # Enter password
+    puts "パスワードを入力してください（使用文字制限なし。4～16byte以内。アカウント名と同一禁止。）\n"  
+    print "パスワード> "  
+    while (input = gets)
+      input.strip!
+      if input == $account_name
+        puts "Password must be different than account."
+      if (input.length >= 4 and input.length <= 16 and input != $account_name) then
+        $account_password = input
+        break
+      else
+        puts "！パスワードは4～16byte以内で、アカウント名と別の文字列を入力してください"  
+        print "パスワード> "  
+      end
+    end 
+    
+    print "パスワード（確認）> "  
+    while (input = gets)
+      input.strip!
+      if ($account_password == input) then
+        puts 
+        break
+      else
+        puts "！パスワードが一致しません\n"  
+        print "パスワード（確認）> "  
+      end
+    end
+    
+    # Enter email address
+    puts "メールアドレスを入力してください（入力は任意）\n"  
+    puts "※パスワードを忘れたときの連絡用にのみ使用します。\n"  
+    puts "※記入しない場合、パスワードの連絡はできません。\n"  
+    print "メールアドレス> "  
+    while (input = gets)
+      input.strip!
+      if (input == '') then
+        account_mail_address = ''
+        puts "メールアドレスは登録しません。"  
+        puts
+        break
+      elsif input =~ $MAIL_ADDRESS_REGEX and input.length <= 256 then
+        # Fix a potential problem
+        # Add downcase for input
+        
+        # The script used to be hang up... I'm not sure
+        # If a user Enter some uppercase after @ symbol
+        # Few user met the problem and have not starting to debug
+        
+        # Since Tsk 2017 build 1
+        account_mail_address = input.downcase
+        puts
+        break
+      else
+        puts "！メールアドレスは正しい形式で、256byte以内にて入力してください"  
+        print "メールアドレス> "  
+      end
+    end
+    end
+    
+    # Register new account on server
+    puts "サーバーにアカウントを登録しています...\n"  
+    
+    # Generate Account XML
+    account_xml = REXML::Document.new
+    account_xml << REXML::XMLDecl.new('1.0', 'UTF-8')
+    account_element = account_xml.add_element("account")
+    account_element.add_element('name').add_text($account_name)
+    account_element.add_element('password').add_text($account_password)
+    account_element.add_element('mail_address').add_text(account_mail_address)
+    # Upload to server
+    response = nil
+    # http = Net::HTTP.new($SERVER_ACCOUNT_HOST, 443)
+    # http.use_ssl = true
+    # http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+    http = Net::HTTP.new($SERVER_ACCOUNT_HOST, 80)
+    http.start do |s|
+      response = s.post($SERVER_ACCOUNT_PATH, account_xml.to_s, $HTTP_REQUEST_HEADER)
+    end
+    
+    print "サーバーからのお返事\n"  
+    response.body.each_line do |line|
+      puts "> #{line}"
+    end
+  
+    if response.code == '200' then
+    # Account registration success:
+      $is_account_register_finish = true
+      $config['account']['name'] = $account_name
+      $config['account']['password'] = $account_password
+      
+      save_config($config_file, config)
+      
+      puts 
+      puts "アカウント情報を設定ファイルに保存しました。"
+      puts "サーバーからのお返事の内容をご確認ください。"
+      puts
+      puts "Enter キーを押すと、続いて対戦結果の報告をします..."
+      gets
+      
+      puts "引き続き、対戦結果の報告をします..."
+      puts
+    else
+    # Account registration failure:
+      puts "もう一度アカウント登録をやり直します...\n\n"
+      puts "Press Enter to retry."
+      gets
+    end
+  end
+end
+def doAccountLogin()
+  puts "★設定ファイル編集\n"
+  puts "#{WEB_SERVICE_NAME} アカウント名とパスワードを設定します"
+  puts "※アカウント名とパスワードが分からない場合、ご利用の#{WEB_SERVICE_NAME}クライアント（緋行跡報告ツール等）の#{$config_file}で確認できます"
+  puts 
+  puts "お持ちの #{WEB_SERVICE_NAME} アカウント名を入力してください"
+  
+  # Enter account name
+  print "アカウント名> "
+  while (input = gets)
+    input.strip!
+    if input =~ $ACCOUNT_NAME_REGEX then
+      $account_name = input
+      puts 
+      break
+    else
+      puts "！アカウント名は半角英数とアンダースコア_のみで、32文字以内で入力してください"
+    end
+    print "アカウント名> "
+  end
+  
+  # Enter password
+  puts "パスワードを入力してください\n"
+  print "パスワード> "
+  while (input = gets)
+    input.strip!
+    if (input.length >= 4 and input.length <= 16 and input != $account_name) then
+      $account_password = input
+      puts
+      break
+    else
+      puts "！パスワードは4～16byte以内で、アカウント名と別の文字列を入力してください"
+    end
+    print "パスワード> "
+  end
+  
+  # Save account to config
+  $config['account']['name'] = $account_name
+  $config['account']['password'] = $account_password
+  save_config($config_file, $config)
+  
+  puts "アカウント情報を設定ファイルに保存しました。\n\n"
+  puts "引き続き、対戦結果の報告をします...\n\n"
+end
+
 
 # Start
 begin
-  # Do update check if var is true
+  ### Define available program launch options
+  
+  opt = OptionParser.new
+  
+  # If '-a' was specified
+  # Mark upload all mode to true
+  opt.on('-a') {|v| $is_all_report = true}
+    
+  # Parse the arguments
+  opt.parse!(ARGV)
+  
+  ### Do update check if var is true
   if $updateCheck
     doUpdateCheck()
   end
   
+  
+  
+  ##################################################
   # Meaning unknown, keep original comments
   # config.yaml がおかしいと代入時にエラーが出ることに対する格好悪い対策
   config ||= {}
   $config['account'] ||= {}
   $config['database'] ||= {}
 
-  account_name = $config['account']['name'].to_s || ''
-  account_password = $config['account']['password'].to_s || ''
+  $account_name = $config['account']['name'].to_s || ''
+  $account_password = $config['account']['password'].to_s || ''
   
   # Meaning unknown, keep original comments
   # ゲームIDを設定ファイルから読み込む機能は -g オプションが必要
-  game_id = $variables['DEFAULT_GAME_ID']
-  db_file_path = $config['database']['file_path'].to_s || DEFAULT_DATABASE_FILE_PATH
-
-
-
-  ### Main part of program ###
-  # int main(){} lol;
-
-  ## Set options
-  opt = OptionParser.new
-
-  # If '-a' was specified
-  # Mark upload all mode to true
-  opt.on('-a') {|v| $is_all_report = true}
-
-  # Parse the arguments
-  opt.parse!(ARGV)
-
-  ## Account settings (login / register)
-  unless (account_name && account_name =~ $variables['ACCOUNT_NAME_REGEX']) then
-    $is_new_account = nil
-    account_name = ''
-    account_password = ''
-    is_account_register_finish = false
+  $game_id = $variables['DEFAULT_GAME_ID']
+  ##################################################
     
-    puts "★#{WEB_SERVICE_NAME} アカウント設定（初回実行時）\n"  
-    puts "#{WEB_SERVICE_NAME} をはじめてご利用の場合、「1」をいれて Enter キーを押してください。"  
+    
+    
+
+  ### Account settings (login / register)
+  # $account_name == false or $account_name including invalid characters:
+  unless ($account_name && $account_name =~ $ACCOUNT_NAME_REGEX) then
+    $is_new_account = false
+    $account_name = ''
+    $account_password = ''
+    $is_account_register_finish = false
+    
+    puts "Can't find a valid account from config..."
+    puts "Is the first time to use Tensokukan Net?"
+    puts "★#{$variables['WEB_SERVICE_NAME']} アカウント設定（初回実行時）\n"  
+    puts "#{$variables['WEB_SERVICE_NAME']} をはじめてご利用の場合、「1」をいれて Enter キーを押してください。"  
     puts "すでに緋行跡報告ツール等でアカウント登録済みの場合、「2」をいれて Enter キーを押してください。\n"  
     puts
     print "> "
@@ -185,200 +400,36 @@ begin
         puts
         break
       end
-      puts 
-      puts "#{WEB_SERVICE_NAME} をはじめてご利用の場合、「1」をいれて Enter キーを押してください。"  
-      puts "すでに緋行跡報告ツール等で #{WEB_SERVICE_NAME} アカウントを登録済みの場合、「2」をいれて Enter キーを押してください。\n"  
+      
+      puts "\nInvalid option.\n"
+      puts "#{$variables['WEB_SERVICE_NAME']} をはじめてご利用の場合、「1」をいれて Enter キーを押してください。"  
+      puts "すでに緋行跡報告ツール等で #{$variables['WEB_SERVICE_NAME']} アカウントを登録済みの場合、「2」をいれて Enter キーを押してください。\n"  
       puts
       print "> "
     end
     
-    if $is_new_account then
-      
-      puts "★新規 #{WEB_SERVICE_NAME} アカウント登録\n\n"  
-      
-      while (!is_account_register_finish)
-	    # Enter account name
-        puts "希望アカウント名を入力してください\n"  
-        puts "アカウント名はURLの一部として使用されます。\n"  
-        puts "（半角英数とアンダースコア_のみ使用可能。32文字以内）\n"  
-        print "希望アカウント名> "  
-        while (input = gets)
-          input.strip!
-          if input =~ ACCOUNT_NAME_REGEX then
-            account_name = input
-            puts 
-            break
-          else
-            puts "！希望アカウント名は半角英数とアンダースコア_のみで、32文字以内で入力してください"  
-            print "希望アカウント名> "  
-          end
-        end
-        
-        # Enter password
-        puts "パスワードを入力してください（使用文字制限なし。4～16byte以内。アカウント名と同一禁止。）\n"  
-        print "パスワード> "  
-        while (input = gets)
-          input.strip!
-          if (input.length >= 4 and input.length <= 16 and input != account_name) then
-            account_password = input
-            break
-          else
-            puts "！パスワードは4～16byte以内で、アカウント名と別の文字列を入力してください"  
-            print "パスワード> "  
-          end
-        end 
-        
-        print "パスワード（確認）> "  
-        while (input = gets)
-          input.strip!
-          if (account_password == input) then
-            puts 
-            break
-          else
-            puts "！パスワードが一致しません\n"  
-            print "パスワード（確認）> "  
-          end
-        end
-        
-        # Enter email address
-        puts "メールアドレスを入力してください（入力は任意）\n"  
-        puts "※パスワードを忘れたときの連絡用にのみ使用します。\n"  
-        puts "※記入しない場合、パスワードの連絡はできません。\n"  
-        print "メールアドレス> "  
-        while (input = gets)
-          input.strip!
-          if (input == '') then
-            account_mail_address = ''
-            puts "メールアドレスは登録しません。"  
-            puts
-            break
-          elsif input =~ MAIL_ADDRESS_REGEX and input.length <= 256 then
-		    # Fix a potential problem
-			
-			# The script used to be hang up... I'm not sure
-			# If a user Enter some uppercase after @ symbol
-			# Few user met the problem and have not starting to debug
-			
-			# Since Tsk 2017 build 1
-            account_mail_address = input.downcase
-            puts
-            break
-          else
-            puts "！メールアドレスは正しい形式で、256byte以内にて入力してください"  
-            print "メールアドレス> "  
-          end
-        end
-        
-        # Register new account on server
-        puts "サーバーにアカウントを登録しています...\n"  
-        
-        # Generate Account XML
-        account_xml = REXML::Document.new
-        account_xml << REXML::XMLDecl.new('1.0', 'UTF-8')
-        account_element = account_xml.add_element("account")
-        account_element.add_element('name').add_text(account_name)
-        account_element.add_element('password').add_text(account_password)
-        account_element.add_element('mail_address').add_text(account_mail_address)
-        # Upload to server
-        response = nil
-        # http = Net::HTTP.new($SERVER_ACCOUNT_HOST, 443)
-        # http.use_ssl = true
-        # http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-        http = Net::HTTP.new($SERVER_ACCOUNT_HOST, 80)
-        http.start do |s|
-          response = s.post($SERVER_ACCOUNT_PATH, account_xml.to_s, $HTTP_REQUEST_HEADER)
-        end
-        
-        print "サーバーからのお返事\n"  
-        response.body.each_line do |line|
-          puts "> #{line}"
-        end
-
-        if response.code == '200' then
-        # Account registration success:
-          is_account_register_finish = true
-          $config['account']['name'] = account_name
-          $config['account']['password'] = account_password
-          
-          save_config(config_file, config)
-          
-          puts 
-          puts "アカウント情報を設定ファイルに保存しました。"
-          puts "サーバーからのお返事の内容をご確認ください。"
-          puts
-          puts "Enter キーを押すと、続いて対戦結果の報告をします..."
-          gets
-          
-          puts "引き続き、対戦結果の報告をします..."
-          puts
-        else
-        # Account registration failure:
-          puts "もう一度アカウント登録をやり直します...\n\n"
-          sleep 1
-        end
-        
-      end # while (!is_account_register_finish)
+    if $is_new_account
+      doAccountSignUp()
     else
-
-      puts "★設定ファイル編集\n"
-      puts "#{WEB_SERVICE_NAME} アカウント名とパスワードを設定します"
-      puts "※アカウント名とパスワードが分からない場合、ご利用の#{WEB_SERVICE_NAME}クライアント（緋行跡報告ツール等）の#{config_file}で確認できます"
-      puts 
-      puts "お持ちの #{WEB_SERVICE_NAME} アカウント名を入力してください"
-      
-      # Enter account name
-      print "アカウント名> "
-      while (input = gets)
-        input.strip!
-        if input =~ ACCOUNT_NAME_REGEX then
-          account_name = input
-          puts 
-          break
-        else
-          puts "！アカウント名は半角英数とアンダースコア_のみで、32文字以内で入力してください"
-        end
-        print "アカウント名> "
-      end
-      
-      # Enter password
-      puts "パスワードを入力してください\n"
-      print "パスワード> "
-      while (input = gets)
-        input.strip!
-        if (input.length >= 4 and input.length <= 16 and input != account_name) then
-          account_password = input
-          puts
-          break
-        else
-          puts "！パスワードは4～16byte以内で、アカウント名と別の文字列を入力してください"
-        end
-        print "パスワード> "
-      end
-      
-      # Save account to config
-      $config['account']['name'] = account_name
-      $config['account']['password'] = account_password
-      save_config(config_file, config)
-      
-      puts "アカウント情報を設定ファイルに保存しました。\n\n"
-      puts "引き続き、対戦結果の報告をします...\n\n"
-      
-    end # if $is_new_account
-    
-    sleep 2
-
+      doAccountLogin()
   end
+  
+  puts $account_name
+  puts $account_password
+  
+  exit
+
 
     
   ## Get the account-based latest upload time from server
   unless $is_all_report then
     puts "★登録済みの最終対戦時刻を取得"
-    puts "GET http://#{$SERVER_LAST_TRACK_RECORD_HOST}#{$SERVER_LAST_TRACK_RECORD_PATH}?game_id=#{game_id}&account_name=#{account_name}"
+    puts "GET http://#{$SERVER_LAST_TRACK_RECORD_HOST}#{$SERVER_LAST_TRACK_RECORD_PATH}?$game_id=#{$game_id}&$account_name=#{$account_name}"
 
     http = Net::HTTP.new($SERVER_LAST_TRACK_RECORD_HOST, 80)
     response = nil
     http.start do |s|
-      response = s.get("#{$SERVER_LAST_TRACK_RECORD_PATH}?game_id=#{game_id}&account_name=#{account_name}", $HTTP_REQUEST_HEADER)
+      response = s.get("#{$SERVER_LAST_TRACK_RECORD_PATH}?$game_id=#{$game_id}&$account_name=#{$account_name}", $HTTP_REQUEST_HEADER)
     end
 
     if response.code == '200' or response.code == '204' then
@@ -404,17 +455,17 @@ begin
   puts
 
   # Get the match results from database
-  db_files = Dir::glob(NKF.nkf('-Wsxm0 --cp932', db_file_path))
+  db_files = Dir::glob(NKF.nkf('-Wsxm0 --cp932', $db_file_path))
 
   if db_files.length > 0
     $trackrecord, $is_read_trackrecord_warning = read_trackrecord(db_files, last_report_time + 1)
     $is_warning_exist = true if $is_read_trackrecord_warning
   else
     raise <<-MSG
-#{config_file} に設定された#{RECORD_SW_NAME}データベースファイルが見つかりません。
+#{$config_file} に設定された#{RECORD_SW_NAME}データベースファイルが見つかりません。
 ・#{PROGRAM_NAME}のインストール場所が正しいかどうか、確認してください
 　デフォルト設定の場合、#{RECORD_SW_NAME}フォルダに、#{PROGRAM_NAME}をフォルダごとおいてください。
-・#{config_file} を変更した場合、設定が正しいかどうか、確認してください
+・#{$config_file} を変更した場合、設定が正しいかどうか、確認してください
     MSG
   end
 
@@ -435,7 +486,7 @@ begin
       puts "#{$trackrecord.length}件中の#{start_row_num + 1}件目～#{end_row_num + 1}件目を送信しています#{$is_force_insert ? "（強制インサートモード）" : ""}...\n"
       
       # Generate XML to upload
-      trackrecord_xml_string = trackrecord2xml_string(game_id, account_name, account_password, $trackrecord[start_row_num..end_row_num], $is_force_insert)
+      trackrecord_xml_string = trackrecord2xml_string($game_id, $account_name, $account_password, $trackrecord[start_row_num..end_row_num], $is_force_insert)
       File.open('./last_report_trackrecord.xml', 'w') do |w|
         w.puts trackrecord_xml_string
       end
@@ -479,7 +530,7 @@ begin
   end
 
   # Update configuration file
-  save_config(config_file, config)
+  save_config($config_file, config)
       
   puts
 
@@ -496,8 +547,10 @@ begin
   end
 
   sleep 3
+end
 
-### Overall error handling ###
+
+  ### Overall error handling ###
 rescue => ex
   if config && $config['account'] then
     $config['account']['name']     = '<secret>' if $config['account']['name']
@@ -541,4 +594,4 @@ rescue => ex
   
   puts "Enter キーを押すと、処理を終了します。"
   exit if gets
-end
+    end
