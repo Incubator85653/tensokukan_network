@@ -15,24 +15,19 @@ require './lib/tenco_reporter/track_record_util'
 include TencoReporter::TrackRecordUtil
 require './lib/tenco_reporter/update_check'
 include TskNet::UpdateCheck
-#require './lib/tenco_reporter/stdout_to_cp932_converter'
 require './lib/tenco_reporter/config_locale'
 
-# Forced insert mode. Set to false when getting started
-is_force_insert = false
-# Upload all mode
-is_all_report = false
-# Detect update check
-updateCheck = true
-# New account?
-is_new_account = false
+$is_force_insert = false # Forced insert mode. Set to false when getting started
+$is_all_report = false # Upload all mode
+$updateCheck = true # Detect update check
+$is_new_account = false # New account?
 
 # Match result
-trackrecord = []
+$trackrecord = []
 
 # Meaning unknown variables, keep original comments
-is_read_trackrecord_warning = false # 対戦結果読み込み時に警告があったかどうか
-is_warning_exist = false # 警告メッセージがあるかどうか
+$is_read_trackrecord_warning = false # 対戦結果読み込み時に警告があったかどうか
+$is_warning_exist = false # 警告メッセージがあるかどうか
 
 ### Load config ###
 
@@ -42,10 +37,10 @@ config_default_file = 'config_default.yaml'
 env_file = 'env.yaml'
 var_file = 'variables.yaml'
 
-# If tsk net config file was missing, raise an error
+# If tsk net config file was missing, print an error and exit program.
 unless (File.exist?(env_file) && File.exist?(var_file) && File.exist?(config_file))
   puts "Error: one or more config files were missing"
-  # Print all the config status on screen to help debug
+  # Print all the config status on screen to help debugging
   puts config_file
   puts File.exist?(config_file)
   puts env_file
@@ -63,11 +58,6 @@ $config = load_config(config_file)
 $env = load_config(env_file)
 $variables = load_config(var_file)
 
-# HTTP header, a hash variable.
-# Muse be include the "tenco" domain info
-# TODO: Add this domain header
-HTTP_REQUEST_HEADER = {"User-Agent" => "Tensokukan Report Tool #{$variables['PROGRAM_VERSION']}"}
-
   # Seems these variables were used to find server.
 $SERVER_TRACK_RECORD_HOST = $env['server']['track_record']['host'].to_s
 $SERVER_TRACK_RECORD_PATH = $env['server']['track_record']['path'].to_s
@@ -78,6 +68,10 @@ $SERVER_ACCOUNT_PATH = $env['server']['account']['path'].to_s
 $CLIENT_LATEST_VERSION_HOST = $env['client']['latest_version']['host'].to_s
 $CLIENT_LATEST_VERSION_PATH = $env['client']['latest_version']['path'].to_s
 $CLIENT_SITE_URL = "http://#{$env['client']['site']['host']}#{$env['client']['site']['path']}"
+# HTTP header, a hash variable.
+# Muse be include the "tenco" domain info
+# TODO: Add this domain header
+$HTTP_REQUEST_HEADER = {"User-Agent" => "Tensokukan Report Tool #{$variables['PROGRAM_VERSION']}"}
 
 # Print program name and version and something else
 # at the very beginning
@@ -86,7 +80,7 @@ puts "ver.#{$variables['PROGRAM_VERSION']}\n\n\n"
 
 def detectExistAccount()
   if $config['account']['name'] == ""
-    is_new_account = true
+    $is_new_account = true
   end
 end
 def doUpdateCheck()
@@ -127,7 +121,7 @@ def doUpdateCheck()
 end
 
 begin
-  if updateCheck
+  if $updateCheck
     doUpdateCheck()
   end
   exit
@@ -156,7 +150,7 @@ begin
 
   # If '-a' was specified
   # Mark upload all mode to true
-  opt.on('-a') {|v| is_all_report = true}
+  opt.on('-a') {|v| $is_all_report = true}
 
   # Meaning unknown, keep original comments
   # 設定ファイルのゲームID設定を有効にする
@@ -192,7 +186,7 @@ begin
 
   ## Account settings (login / register)
   unless (account_name && account_name =~ $variables['ACCOUNT_NAME_REGEX']) then
-    is_new_account = nil
+    $is_new_account = nil
     account_name = ''
     account_password = ''
     is_account_register_finish = false
@@ -206,11 +200,11 @@ begin
     while (input = gets)
       input.strip!
       if input == "1"
-        is_new_account = true
+        $is_new_account = true
         puts
         break
       elsif input == "2"
-        is_new_account = false
+        $is_new_account = false
         puts
         break
       end
@@ -221,7 +215,7 @@ begin
       print "> "
     end
     
-    if is_new_account then
+    if $is_new_account then
       
       puts "★新規 #{WEB_SERVICE_NAME} アカウント登録\n\n"  
       
@@ -315,7 +309,7 @@ begin
         # http.verify_mode = OpenSSL::SSL::VERIFY_NONE
         http = Net::HTTP.new($SERVER_ACCOUNT_HOST, 80)
         http.start do |s|
-          response = s.post($SERVER_ACCOUNT_PATH, account_xml.to_s, HTTP_REQUEST_HEADER)
+          response = s.post($SERVER_ACCOUNT_PATH, account_xml.to_s, $HTTP_REQUEST_HEADER)
         end
         
         print "サーバーからのお返事\n"  
@@ -392,7 +386,7 @@ begin
       puts "アカウント情報を設定ファイルに保存しました。\n\n"
       puts "引き続き、対戦結果の報告をします...\n\n"
       
-    end # if is_new_account
+    end # if $is_new_account
     
     sleep 2
 
@@ -400,14 +394,14 @@ begin
 
     
   ## Get the account-based latest upload time from server
-  unless is_all_report then
+  unless $is_all_report then
     puts "★登録済みの最終対戦時刻を取得"
     puts "GET http://#{$SERVER_LAST_TRACK_RECORD_HOST}#{$SERVER_LAST_TRACK_RECORD_PATH}?game_id=#{game_id}&account_name=#{account_name}"
 
     http = Net::HTTP.new($SERVER_LAST_TRACK_RECORD_HOST, 80)
     response = nil
     http.start do |s|
-      response = s.get("#{$SERVER_LAST_TRACK_RECORD_PATH}?game_id=#{game_id}&account_name=#{account_name}", HTTP_REQUEST_HEADER)
+      response = s.get("#{$SERVER_LAST_TRACK_RECORD_PATH}?game_id=#{game_id}&account_name=#{account_name}", $HTTP_REQUEST_HEADER)
     end
 
     if response.code == '200' or response.code == '204' then
@@ -436,8 +430,8 @@ begin
   db_files = Dir::glob(NKF.nkf('-Wsxm0 --cp932', db_file_path))
 
   if db_files.length > 0
-    trackrecord, is_read_trackrecord_warning = read_trackrecord(db_files, last_report_time + 1)
-    is_warning_exist = true if is_read_trackrecord_warning
+    $trackrecord, $is_read_trackrecord_warning = read_trackrecord(db_files, last_report_time + 1)
+    $is_warning_exist = true if $is_read_trackrecord_warning
   else
     raise <<-MSG
 #{config_file} に設定された#{RECORD_SW_NAME}データベースファイルが見つかりません。
@@ -452,19 +446,19 @@ begin
   ## The uploading process
 
   # Don't upload if queue is empty
-  if trackrecord.length == 0 then
+  if $trackrecord.length == 0 then
     puts "報告対象データはありませんでした。"
   else
     
     # Split the match results and send to server
-    0.step(trackrecord.length, TRACKRECORD_POST_SIZE) do |start_row_num|
-      end_row_num = [start_row_num + TRACKRECORD_POST_SIZE - 1, trackrecord.length - 1].min
+    0.step($trackrecord.length, TRACKRECORD_POST_SIZE) do |start_row_num|
+      end_row_num = [start_row_num + TRACKRECORD_POST_SIZE - 1, $trackrecord.length - 1].min
       response = nil # サーバーからのレスポンスデータ
       
-      puts "#{trackrecord.length}件中の#{start_row_num + 1}件目～#{end_row_num + 1}件目を送信しています#{is_force_insert ? "（強制インサートモード）" : ""}...\n"
+      puts "#{$trackrecord.length}件中の#{start_row_num + 1}件目～#{end_row_num + 1}件目を送信しています#{$is_force_insert ? "（強制インサートモード）" : ""}...\n"
       
       # Generate XML to upload
-      trackrecord_xml_string = trackrecord2xml_string(game_id, account_name, account_password, trackrecord[start_row_num..end_row_num], is_force_insert)
+      trackrecord_xml_string = trackrecord2xml_string(game_id, account_name, account_password, $trackrecord[start_row_num..end_row_num], $is_force_insert)
       File.open('./last_report_trackrecord.xml', 'w') do |w|
         w.puts trackrecord_xml_string
       end
@@ -480,7 +474,7 @@ begin
       # https.verify_mode = OpenSSL::SSL::VERIFY_PEER
       http = Net::HTTP.new($SERVER_TRACK_RECORD_HOST, 80)
       http.start do |s|
-        response = s.post($SERVER_TRACK_RECORD_PATH, trackrecord_xml_string, HTTP_REQUEST_HEADER)
+        response = s.post($SERVER_TRACK_RECORD_PATH, trackrecord_xml_string, $HTTP_REQUEST_HEADER)
       end
       
       # Display upload result from server
@@ -498,7 +492,7 @@ begin
         if response.body.index(PLEASE_RETRY_FORCE_INSERT)
           puts "強制インサートモードで報告しなおします。5秒後に報告再開...\n\n"
           sleep 5
-          is_force_insert = true
+          $is_force_insert = true
           redo
         else
           raise "報告時にサーバー側でエラーが発生しました。処理を中断します。"
@@ -513,7 +507,7 @@ begin
   puts
 
   # Exit message output
-  if is_warning_exist then
+  if $is_warning_exist then
     puts "報告処理は正常に終了しましたが、警告メッセージがあります。"
     puts "出力結果をご確認ください。"
     puts
