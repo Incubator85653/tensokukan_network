@@ -15,18 +15,17 @@ require './lib/tenco_reporter/track_record_util'
 include TencoReporter::TrackRecordUtil
 require './lib/tenco_reporter/update_check'
 include TskNet::UpdateCheck
-require './lib/tenco_reporter/stdout_to_cp932_converter'
+#require './lib/tenco_reporter/stdout_to_cp932_converter'
 require './lib/tenco_reporter/config_locale'
-
-# Upload settings
 
 # Forced insert mode. Set to false when getting started
 is_force_insert = false
 # Upload all mode
 is_all_report = false
-
-# Variables that changeable during execute
+# Detect update check
 updateCheck = false
+# New account?
+is_new_account = false
 
 # Match result
 trackrecord = []
@@ -60,85 +59,94 @@ unless (File.exist?(env_file) && File.exist?(var_file) && File.exist?(config_fil
 end
 
 # Read config to RAM
-config = load_config(config_file) 
-env  = load_config(env_file)
-variables  = load_config(var_file)
+$config = load_config(config_file) 
+$env = load_config(env_file)
+$variables = load_config(var_file)
 
 # HTTP header, a hash variable.
 # Muse be include the "tenco" domain info
 # TODO: Add this domain header
-HTTP_REQUEST_HEADER = {"User-Agent" => "Tensokukan Report Tool #{variables['PROGRAM_VERSION']}"}
+HTTP_REQUEST_HEADER = {"User-Agent" => "Tensokukan Report Tool #{$variables['PROGRAM_VERSION']}"}
+
+  # Seems these variables were used to find server.
+SERVER_TRACK_RECORD_HOST = $env['server']['track_record']['host'].to_s
+SERVER_TRACK_RECORD_PATH = $env['server']['track_record']['path'].to_s
+SERVER_LAST_TRACK_RECORD_HOST = $env['server']['last_track_record']['host'].to_s
+SERVER_LAST_TRACK_RECORD_PATH = $env['server']['last_track_record']['path'].to_s
+SERVER_ACCOUNT_HOST = $env['server']['account']['host'].to_s
+SERVER_ACCOUNT_PATH = $env['server']['account']['path'].to_s
+CLIENT_LATEST_VERSION_HOST = $env['client']['latest_version']['host'].to_s
+CLIENT_LATEST_VERSION_PATH = $env['client']['latest_version']['path'].to_s
+CLIENT_SITE_URL = "http://#{$env['client']['site']['host']}#{$env['client']['site']['path']}"
 
 # Print program name and version and something else
 # at the very beginning
-puts "*** #{variables['PROGRAM_NAME']} ***"
-puts "ver.#{variables['PROGRAM_VERSION']}\n\n\n"
+puts "*** #{$variables['PROGRAM_NAME']} ***"
+puts "ver.#{$variables['PROGRAM_VERSION']}\n\n\n"
 
-
-def doUpdateCheck()
-  if updateCheck
-    begin
-      latest_version = get_latest_version(variables['CLIENT_LATEST_VERSION_HOST'], variables['CLIENT_LATEST_VERSION_PATH'])
-      
-      case
-      when latest_version.nil?
-        # puts "！最新バージョンの取得に失敗しました。"
-        # puts "スキップして続行します。"
-      when latest_version > variables['PROGRAM_VERSION'] then
-        puts "★新しいバージョンの#{variables['PROGRAM_NAME']}が公開されています。（ver.#{latest_version}）"
-        puts "ブラウザを開いて確認しますか？（Nを入力するとスキップ）"
-        print "> "
-        case gets[0..0]
-        when "N" then
-          puts "スキップして続行します。"
-          puts 
-        else
-          system "start #{CLIENT_SITE_URL}"
-          exit
-        end
-      when latest_version <= PROGRAM_VERSION then
-        # puts "お使いのバージョンは最新です。"
-        # puts 
-      end
-      
-    # Print a message if update check was failed
-    rescue => ex
-      puts "！クライアント最新バージョン自動チェック中にエラーが発生しました。"
-      puts ex.to_s
-      # puts ex.backtrace.join("\n")
-      puts ex.class
-      puts
-      puts "スキップして処理を続行します。"
-      puts
-    end
+def detectExistAccount()
+  if $config['account']['name'] == ""
+    is_new_account = true
+  end
 end
+def doUpdateCheck()
+  begin
+    latest_version = get_latest_version(CLIENT_LATEST_VERSION_HOST, CLIENT_LATEST_VERSION_PATH)
+    
+    case
+    when latest_version.nil?
+      puts "！最新バージョンの取得に失敗しました。"
+      puts "スキップして続行します。"
+    when latest_version > $variables['PROGRAM_VERSION'] then
+      puts "★新しいバージョンの#{$variables['PROGRAM_NAME']}が公開されています。（ver.#{latest_version}）"
+      puts "ブラウザを開いて確認しますか？（Nを入力するとスキップ）"
+      print "> "
+      case gets[0..0]
+      when "N" then
+        puts "スキップして続行します。"
+        puts 
+      else
+        system "start #{CLIENT_SITE_URL}"
+        exit
+      end
+    when latest_version <= $variables['PROGRAM_VERSION'] then
+      puts "お使いのバージョンは最新です。"
+      puts 
+    end
+    
+  # Print a message if update check was failed
+  rescue => ex
+    puts "！クライアント最新バージョン自動チェック中にエラーが発生しました。"
+    puts ex.to_s
+    # puts ex.backtrace.join("\n")
+    puts ex.class
+    puts
+    puts "スキップして処理を続行します。"
+    puts
+  end
 end
 
 begin
+  if updateCheck
+    doUpdateCheck()
+  end
+  exit
+  
   # Meaning unknown, keep original comments
   # config.yaml がおかしいと代入時にエラーが出ることに対する格好悪い対策
   config ||= {}
-  config['account'] ||= {}
-  config['database'] ||= {}
+  $config['account'] ||= {}
+  $config['database'] ||= {}
 
-  account_name = config['account']['name'].to_s || ''
-  account_password = config['account']['password'].to_s || ''
+  account_name = $config['account']['name'].to_s || ''
+  account_password = $config['account']['password'].to_s || ''
   
   # Meaning unknown, keep original comments
   # ゲームIDを設定ファイルから読み込む機能は -g オプションが必要
   game_id = DEFAULT_GAME_ID
-  db_file_path = config['database']['file_path'].to_s || DEFAULT_DATABASE_FILE_PATH
+  db_file_path = $config['database']['file_path'].to_s || DEFAULT_DATABASE_FILE_PATH
 
-  # Seems these variables were used to find server.
-  SERVER_TRACK_RECORD_HOST = env['server']['track_record']['host'].to_s
-  SERVER_TRACK_RECORD_PATH = env['server']['track_record']['path'].to_s
-  SERVER_LAST_TRACK_RECORD_HOST = env['server']['last_track_record']['host'].to_s
-  SERVER_LAST_TRACK_RECORD_PATH = env['server']['last_track_record']['path'].to_s
-  SERVER_ACCOUNT_HOST = env['server']['account']['host'].to_s
-  SERVER_ACCOUNT_PATH = env['server']['account']['path'].to_s
-  CLIENT_LATEST_VERSION_HOST = env['client']['latest_version']['host'].to_s
-  CLIENT_LATEST_VERSION_PATH = env['client']['latest_version']['path'].to_s
-  CLIENT_SITE_URL = "http://#{env['client']['site']['host']}#{env['client']['site']['path']}"
+
 
   ### Main part of program ###
   # int main(){} lol;
@@ -156,7 +164,7 @@ begin
   # If '-g' was specified
   opt.on('-g') do |v|
     begin
-      game_id = config['game']['id'].to_i
+      game_id = $config['game']['id'].to_i
     rescue => ex
       raise "エラー：設定ファイル（#{config_file}）から、ゲームIDを取得できませんでした。"
     end
@@ -173,7 +181,7 @@ begin
   opt.on('--database-filepath-default-overwrite') do |v|  
     puts "★設定ファイルの#{RECORD_SW_NAME}DBファイルパスを上書きします"  
     puts "#{config_file} の#{RECORD_SW_NAME}DBファイルパスを #{DEFAULT_DATABASE_FILE_PATH} に書き換え..."  
-    config['database']['file_path'] = DEFAULT_DATABASE_FILE_PATH
+    $config['database']['file_path'] = DEFAULT_DATABASE_FILE_PATH
     save_config(config_file, config)
     puts "設定ファイルを保存しました！"  
     puts
@@ -183,7 +191,7 @@ begin
   opt.parse!(ARGV)
 
   ## Account settings (login / register)
-  unless (account_name && account_name =~ ACCOUNT_NAME_REGEX) then
+  unless (account_name && account_name =~ $variables['ACCOUNT_NAME_REGEX']) then
     is_new_account = nil
     account_name = ''
     account_password = ''
@@ -318,8 +326,8 @@ begin
         if response.code == '200' then
         # Account registration success:
           is_account_register_finish = true
-          config['account']['name'] = account_name
-          config['account']['password'] = account_password
+          $config['account']['name'] = account_name
+          $config['account']['password'] = account_password
           
           save_config(config_file, config)
           
@@ -377,8 +385,8 @@ begin
       end
       
       # Save account to config
-      config['account']['name'] = account_name
-      config['account']['password'] = account_password
+      $config['account']['name'] = account_name
+      $config['account']['password'] = account_password
       save_config(config_file, config)
       
       puts "アカウント情報を設定ファイルに保存しました。\n\n"
@@ -520,9 +528,9 @@ begin
 
 ### Overall error handling ###
 rescue => ex
-  if config && config['account'] then
-    config['account']['name']     = '<secret>' if config['account']['name']
-    config['account']['password'] = '<secret>' if config['account']['password']
+  if config && $config['account'] then
+    $config['account']['name']     = '<secret>' if $config['account']['name']
+    $config['account']['password'] = '<secret>' if $config['account']['password']
   end
   
   puts 
