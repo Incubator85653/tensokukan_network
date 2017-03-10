@@ -13,7 +13,10 @@ require './lib/tenco_reporter/config_util'
 include TencoReporter::ConfigUtil
 require './lib/tenco_reporter/track_record_util'
 include TencoReporter::TrackRecordUtil
+require './lib/tenco_reporter/update_check'
+include TskNet::UpdateCheck
 require './lib/tenco_reporter/stdout_to_cp932_converter'
+require './lib/tenco_reporter/config_locale'
 
 # Upload settings
 
@@ -23,9 +26,8 @@ is_force_insert = false
 is_all_report = false
 
 # Variables that changeable during execute
+updateCheck = false
 
-# Get the latest client version from server
-latest_version = nil
 # Match result
 trackrecord = []
 
@@ -72,6 +74,46 @@ HTTP_REQUEST_HEADER = {"User-Agent" => "Tensokukan Report Tool #{variables['PROG
 puts "*** #{variables['PROGRAM_NAME']} ***"
 puts "ver.#{variables['PROGRAM_VERSION']}\n\n\n"
 
+
+def doUpdateCheck()
+  if updateCheck
+    begin
+      latest_version = get_latest_version(variables['CLIENT_LATEST_VERSION_HOST'], variables['CLIENT_LATEST_VERSION_PATH'])
+      
+      case
+      when latest_version.nil?
+        # puts "！最新バージョンの取得に失敗しました。"
+        # puts "スキップして続行します。"
+      when latest_version > variables['PROGRAM_VERSION'] then
+        puts "★新しいバージョンの#{variables['PROGRAM_NAME']}が公開されています。（ver.#{latest_version}）"
+        puts "ブラウザを開いて確認しますか？（Nを入力するとスキップ）"
+        print "> "
+        case gets[0..0]
+        when "N" then
+          puts "スキップして続行します。"
+          puts 
+        else
+          system "start #{CLIENT_SITE_URL}"
+          exit
+        end
+      when latest_version <= PROGRAM_VERSION then
+        # puts "お使いのバージョンは最新です。"
+        # puts 
+      end
+      
+    # Print a message if update check was failed
+    rescue => ex
+      puts "！クライアント最新バージョン自動チェック中にエラーが発生しました。"
+      puts ex.to_s
+      # puts ex.backtrace.join("\n")
+      puts ex.class
+      puts
+      puts "スキップして処理を続行します。"
+      puts
+    end
+end
+end
+
 begin
   # Meaning unknown, keep original comments
   # config.yaml がおかしいと代入時にエラーが出ることに対する格好悪い対策
@@ -83,17 +125,10 @@ begin
   account_password = config['account']['password'].to_s || ''
   
   # Meaning unknown, keep original comments
-  
   # ゲームIDを設定ファイルから読み込む機能は -g オプションが必要
   game_id = DEFAULT_GAME_ID
   db_file_path = config['database']['file_path'].to_s || DEFAULT_DATABASE_FILE_PATH
 
-  # proxy_host = config['proxy']['host']
-  # proxy_port = config['proxy']['port']
-  # last_report_time = config['last_report_time']
-  # IS_USE_HTTPS = false
-
-  
   # Seems these variables were used to find server.
   SERVER_TRACK_RECORD_HOST = env['server']['track_record']['host'].to_s
   SERVER_TRACK_RECORD_PATH = env['server']['track_record']['path'].to_s
@@ -105,59 +140,6 @@ begin
   CLIENT_LATEST_VERSION_PATH = env['client']['latest_version']['path'].to_s
   CLIENT_SITE_URL = "http://#{env['client']['site']['host']}#{env['client']['site']['path']}"
 
-  ### Check updates ###
-
-  # puts "★クライアント最新バージョン自動チェック"
-  # puts 
-  
-  def get_latest_version(latest_version_host, latest_version_path)
-    response = nil
-    Net::HTTP.new(latest_version_host, 80).start do |s|
-      response = s.get(latest_version_path, HTTP_REQUEST_HEADER)
-    end  
-    response.code == '200' ? response.body.strip : nil
-  end
-  
-  begin
-    latest_version = get_latest_version(CLIENT_LATEST_VERSION_HOST, CLIENT_LATEST_VERSION_PATH)
-    
-    case
-    when latest_version.nil?
-      # puts "！最新バージョンの取得に失敗しました。"
-      # puts "スキップして続行します。"
-    when latest_version > PROGRAM_VERSION then
-      puts "★新しいバージョンの#{PROGRAM_NAME}が公開されています。（ver.#{latest_version}）"
-      puts "ブラウザを開いて確認しますか？（Nを入力するとスキップ）"
-      print "> "
-      case gets[0..0]
-      when "N" then
-        puts "スキップして続行します。"
-        puts 
-      else
-        system "start #{CLIENT_SITE_URL}"
-        exit
-      end
-    when latest_version <= PROGRAM_VERSION then
-      # puts "お使いのバージョンは最新です。"
-      # puts 
-    end
-    
-  # Print a message if update check was failed
-  rescue => ex
-    puts "！クライアント最新バージョン自動チェック中にエラーが発生しました。"
-    puts ex.to_s
-    # puts ex.backtrace.join("\n")
-    puts ex.class
-    puts
-    puts "スキップして処理を続行します。"
-    puts
-  end
-  
-  # TODO
-  # Put a exit command to stop program keep running
-  exit
-  
-  
   ### Main part of program ###
   # int main(){} lol;
 
