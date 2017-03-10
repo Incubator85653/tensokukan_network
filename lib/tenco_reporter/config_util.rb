@@ -30,6 +30,12 @@ module TencoReporter
       end
     end
     
+    # Save an Array
+    def array_save_config(config_file, config)
+      File.open(config_file, 'w') do |w|
+        w.write config.to_yaml
+      end
+    end
   end
 end
 
