@@ -72,12 +72,17 @@ $CLIENT_SITE_URL = "http://#{$env['client']['site']['host']}#{$env['client']['si
 # Muse be include the "tenco" domain info
 # TODO: Add this domain header
 $HTTP_REQUEST_HEADER = {"User-Agent" => "Tensokukan Report Tool #{$variables['PROGRAM_VERSION']}"}
-
+# Environments were loaded, below are program code.
+###################################################
+  
+    
+  
 # Print program name and version and something else
 # at the very beginning
 puts "*** #{$variables['PROGRAM_NAME']} ***"
 puts "ver.#{$variables['PROGRAM_VERSION']}\n\n\n"
 
+# Define some common methods
 def detectExistAccount()
   if $config['account']['name'] == ""
     $is_new_account = true
@@ -120,11 +125,12 @@ def doUpdateCheck()
   end
 end
 
+# Start
 begin
+  # Do update check if var is true
   if $updateCheck
     doUpdateCheck()
   end
-  exit
   
   # Meaning unknown, keep original comments
   # config.yaml がおかしいと代入時にエラーが出ることに対する格好悪い対策
@@ -137,7 +143,7 @@ begin
   
   # Meaning unknown, keep original comments
   # ゲームIDを設定ファイルから読み込む機能は -g オプションが必要
-  game_id = DEFAULT_GAME_ID
+  game_id = $variables['DEFAULT_GAME_ID']
   db_file_path = $config['database']['file_path'].to_s || DEFAULT_DATABASE_FILE_PATH
 
 
@@ -151,24 +157,6 @@ begin
   # If '-a' was specified
   # Mark upload all mode to true
   opt.on('-a') {|v| $is_all_report = true}
-
-  # Meaning unknown, keep original comments
-  # 設定ファイルのゲームID設定を有効にする
-  
-  # If '-g' was specified
-  opt.on('-g') do |v|
-    begin
-      game_id = $config['game']['id'].to_i
-    rescue => ex
-      raise "エラー：設定ファイル（#{config_file}）から、ゲームIDを取得できませんでした。"
-    end
-    
-    if game_id.nil? || game_id < 1 then
-      raise "エラー：設定ファイル（#{config_file}）のゲームIDの記述が正しくありません。"
-    end
-    
-    puts "★設定ファイルのゲームID（#{game_id}）で報告を実行します"  
-  end
 
   # If '--database-filepath-default-overwrite' was specified
   # Reset database path to default
