@@ -158,18 +158,7 @@ begin
   # Mark upload all mode to true
   opt.on('-a') {|v| $is_all_report = true}
 
-  # If '--database-filepath-default-overwrite' was specified
-  # Reset database path to default
-  opt.on('--database-filepath-default-overwrite') do |v|  
-    puts "★設定ファイルの#{RECORD_SW_NAME}DBファイルパスを上書きします"  
-    puts "#{config_file} の#{RECORD_SW_NAME}DBファイルパスを #{DEFAULT_DATABASE_FILE_PATH} に書き換え..."  
-    $config['database']['file_path'] = DEFAULT_DATABASE_FILE_PATH
-    save_config(config_file, config)
-    puts "設定ファイルを保存しました！"  
-    puts
-    exit
-  end
-
+  # Parse the arguments
   opt.parse!(ARGV)
 
   ## Account settings (login / register)
