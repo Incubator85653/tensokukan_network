@@ -82,12 +82,15 @@ $CLIENT_LATEST_VERSION_PATH = $env['client']['latest_version']['path'].to_s
 $CLIENT_SITE_URL = "http://#{$env['client']['site']['host']}#{$env['client']['site']['path']}"
 # Default HTTP request header
 $HTTP_REQUEST_HEADER = $variables['HTTP_REQUEST_HEADER'][0]
+$HTTP_REQUEST_HEADER = {"User-Agent" => "Tensokukan Report Tool #{$variables['PROGRAM_VERSION']}"}
 # Two different request header for obfs4 forward server.
 $HTTP_REQUEST_HEADER_MAIN = $variables['HTTP_OBFS4_REQUEST_HEADER'][0]
 $HTTP_REQUEST_HEADER_STATIC = $variables['HTTP_OBFS4_REQUEST_HEADER'][1]
 # Vaild account name and email address characters, regular expression
 $ACCOUNT_NAME_REGEX = /\A[a-zA-Z0-9_]{1,32}\z/
 $MAIL_ADDRESS_REGEX = /\A[\x01-\x7F]+@(([-a-z0-9]+\.)*[a-z]+|\[\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\])\z/
+# Error Log path
+$ERROR_LOG_PATH = $variables['ERROR_LOG_PATH']
 
 # User account and password
 $account_name = ""
@@ -422,7 +425,7 @@ def detectUploadAllMode()
     http.start do |s|
       $response = s.get("#{$SERVER_LAST_TRACK_RECORD_PATH}?$game_id=#{$game_id}&$account_name=#{$account_name}", $HTTP_REQUEST_HEADER)
     end
-  
+    puts $response.code
     if $response.code == '200' or $response.code == '204' then
       if ($response.body and $response.body != '') then
         $last_report_time = Time.parse($response.body)
@@ -590,11 +593,11 @@ rescue => ex
   puts
   puts '### エラー詳細ここまで ###'
   
-  File.open(ERROR_LOG_PATH, 'a') do |log|
-    log.puts "#{Time.now.strftime('%Y/%m/%d %H:%M:%S')} #{File::basename(__FILE__)} #{PROGRAM_VERSION}" 
+  File.open($ERROR_LOG_PATH, 'w') do |log|
+    log.puts "#{Time.now.strftime('%Y/%m/%d %H:%M:%S')} #{File::basename(__FILE__)} #{$PROGRAM_VERSION}" 
     log.puts ex.to_s
     log.puts ex.backtrace.join("\n")
-    log.puts config ? config.to_yaml : "config が設定されていません。"
+    log.puts $config ? $config.to_yaml : "config が設定されていません。"
     if $response then
       log.puts "<サーバーからの最後のメッセージ>"
       log.puts "HTTP status code : #{$response.code}"
@@ -604,7 +607,7 @@ rescue => ex
   end
   
   puts
-  puts "上記のエラー内容を #{ERROR_LOG_PATH} に書き出しました。"
+  puts "上記のエラー内容を #{$ERROR_LOG_PATH} に書き出しました。"
   puts
   
   puts "Enter キーを押すと、処理を終了します。"
