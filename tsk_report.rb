@@ -91,7 +91,12 @@ $ACCOUNT_NAME_REGEX = /\A[a-zA-Z0-9_]{1,32}\z/
 $MAIL_ADDRESS_REGEX = /\A[\x01-\x7F]+@(([-a-z0-9]+\.)*[a-z]+|\[\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\])\z/
 # Error Log path
 $ERROR_LOG_PATH = $variables['ERROR_LOG_PATH']
-
+# Etc
+$RECORD_SW_NAME = $variables['RECORD_SW_NAME']
+$DB_TR_TABLE_NAME = $variables['DB_TR_TABLE_NAME']
+$DUPLICATION_LIMIT_TIME_SECONDS = $variables['DUPLICATION_LIMIT_TIME_SECONDS']
+$TRACKRECORD_POST_SIZE = $variables['TRACKRECORD_POST_SIZE']
+$PLEASE_RETRY_FORCE_INSERT = $variables['PLEASE_RETRY_FORCE_INSERT']
 # User account and password
 $account_name = ""
 $account_password = ""
@@ -119,6 +124,10 @@ puts "ver.#{$variables['PROGRAM_VERSION']}\n\n\n"
 def saveConfigFile()
   # Update configuration file
   save_config($config_file, config)
+end
+def printHTTPcode(response)
+  puts "HTTP #{response.code}"
+  puts
 end
 def parseLaunchArguments()
   ### Define available program launch options
@@ -423,9 +432,10 @@ def detectUploadAllMode()
     http = Net::HTTP.new($SERVER_LAST_TRACK_RECORD_HOST, 80)
     $response = nil
     http.start do |s|
-      $response = s.get("#{$SERVER_LAST_TRACK_RECORD_PATH}?$game_id=#{$game_id}&$account_name=#{$account_name}", $HTTP_REQUEST_HEADER)
+      $response = s.get("#{$SERVER_LAST_TRACK_RECORD_PATH}?game_id=#{$game_id}&account_name=#{$account_name}", $HTTP_REQUEST_HEADER)
     end
-    puts $response.code
+    printHTTPcode($response)
+    
     if $response.code == '200' or $response.code == '204' then
       if ($response.body and $response.body != '') then
         $last_report_time = Time.parse($response.body)
@@ -437,11 +447,12 @@ def detectUploadAllMode()
     else
       raise "最終対戦時刻の取得時にサーバーエラーが発生しました。処理を中断します。"
     end
-  
-  # If upload all mode is true
-  puts "★全件報告モードです。サーバーからの登録済み最終対戦時刻の取得をスキップします。"
-  $last_report_time = Time.at(0)
-  end
+    
+  else
+    # If upload all mode is true
+    puts "★全件報告モードです。サーバーからの登録済み最終対戦時刻の取得をスキップします。"
+    $last_report_time = Time.at(0)
+    end
 end
 def readDatafromDb()
   # Get the match results from database
@@ -452,15 +463,15 @@ def readDatafromDb()
     $is_warning_exist = true if $is_read_trackrecord_warning
   else
     raise <<-MSG
-#{$config_file} に設定された#{RECORD_SW_NAME}データベースファイルが見つかりません。
-・#{PROGRAM_NAME}のインストール場所が正しいかどうか、確認してください
-　デフォルト設定の場合、#{RECORD_SW_NAME}フォルダに、#{PROGRAM_NAME}をフォルダごとおいてください。
+#{$config_file} に設定された#{$RECORD_SW_NAME}データベースファイルが見つかりません。
+・#{$PROGRAM_NAME}のインストール場所が正しいかどうか、確認してください
+　デフォルト設定の場合、#{$RECORD_SW_NAME}フォルダに、#{$PROGRAM_NAME}をフォルダごとおいてください。
 ・#{$config_file} を変更した場合、設定が正しいかどうか、確認してください
     MSG
   end
   
   puts "★対戦結果送信"
-  puts ("#{RECORD_SW_NAME}の記録から、" + $last_report_time.strftime('%Y/%m/%d %H:%M:%S') + " 以降の対戦結果を報告します。")
+  puts ("#{$RECORD_SW_NAME}の記録から、" + $last_report_time.strftime('%Y/%m/%d %H:%M:%S') + " 以降の対戦結果を報告します。")
   puts
 end
 def doUploadData()
@@ -471,8 +482,8 @@ def doUploadData()
     puts "報告対象データはありませんでした。"
   else
     # Split the match results and send to server
-    0.step($trackrecord.length, TRACKRECORD_POST_SIZE) do |start_row_num|
-      end_row_num = [start_row_num + TRACKRECORD_POST_SIZE - 1, $trackrecord.length - 1].min
+    0.step($trackrecord.length, $TRACKRECORD_POST_SIZE) do |start_row_num|
+      end_row_num = [start_row_num + $TRACKRECORD_POST_SIZE - 1, $trackrecord.length - 1].min
       $response = nil # サーバーからのレスポンスデータ
       
       puts "#{$trackrecord.length}件中の#{start_row_num + 1}件目～#{end_row_num + 1}件目を送信しています#{$is_force_insert ? "（強制インサートモード）" : ""}...\n"
@@ -483,10 +494,12 @@ def doUploadData()
         w.puts trackrecord_xml_string
       end
 
+      # And then send to server
       http = Net::HTTP.new($SERVER_TRACK_RECORD_HOST, 80)
       http.start do |s|
         $response = s.post($SERVER_TRACK_RECORD_PATH, trackrecord_xml_string, $HTTP_REQUEST_HEADER)
       end
+      printHTTPcode($response)
       
       # Display upload result from server
       puts "サーバーからのお返事"
@@ -497,12 +510,12 @@ def doUploadData()
       
       if $response.code == '200' then
         sleep 1
-      # Meaning unknown code, keep original comments
-      # 特に表示しない
+        # Meaning unknown code, keep original comments
+        # 特に表示しない
       else
-        if $response.body.index(PLEASE_RETRY_FORCE_INSERT)
-          puts "強制インサートモードで報告しなおします。5秒後に報告再開...\n\n"
-          sleep 5
+        if $response.body.index($PLEASE_RETRY_FORCE_INSERT)
+          puts "強制インサートモードで報告しなおします。1秒後に報告再開...\n\n"
+          sleep 1
           $is_force_insert = true
           redo
         else
@@ -523,50 +536,31 @@ def printExitMessage()
   else
     puts "報告処理が正常に終了しました。"
   end
-  sleep 3
 end
 
 # Start
 begin
   parseLaunchArguments()
-  puts "parseLaunchArguments\n"
-  puts "===========\n"
   importConfigToVariables()
-  puts "importConfigToVariables\n"
-  puts "==========\n"
   detectExistAccount()
-  puts "detectExistAccount\n"
-  puts "==========\n"
 
   if $updateCheck
     doUpdateCheck()
-    puts "doUpdateCheck\n"
-    puts "==========\n"
   end
   
-  # Do account setup if there isn't a exist valid account
   if $is_account_register_finish != true
     doNewAccountSetup()
-    puts "doNewAccountSetup\n"
   end
     
-  ## Get the account-based latest upload time from server
+  # Get the account-based latest upload time from server
   $last_report_time = nil
   $response = nil
   detectUploadAllMode()
-  puts "detectUploadAllMode\n"
-  puts "==========\n"
   readDatafromDb()
-  puts "readDatafromDb\n"
-  puts "==========\n"
   doUploadData()
-  puts"doUploadData\n"
-  puts "==========\n"
 
   # Exit message output
   printExitMessage()
-  puts "printExitMessage\n"
-  puts "==========\n"
 
 ### Overall error handling ###
 rescue => ex
