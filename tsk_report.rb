@@ -135,7 +135,7 @@ def importConfigToVariables()
   # Meaning unknown, keep original comments
 
   # config.yaml がおかしいと代入時にエラーが出ることに対する格好悪い対策
-  config ||= {}
+  $config ||= {}
   $config['account'] ||= {}
   $config['database'] ||= {}
 
@@ -151,15 +151,16 @@ def detectExistAccount()
   else
     $is_account_register_finish = true
   end
-  
   # The old one account detect method(regulare expersion)
   # Run at the same time to prevent one of them not work.
   
-  # If $account_name == false or $account_name including invalid characters:
-  unless ($account_name && $account_name =~ $ACCOUNT_NAME_REGEX) then
+  # != 0 means the account is not valid:
+  if ($account_name =~ $ACCOUNT_NAME_REGEX) != 0
     $account_name = ''
     $account_password = ''
     $is_account_register_finish = false
+  else
+    $is_account_register_finish = true
   end
 end
 def doUpdateCheck()
@@ -291,21 +292,21 @@ def doAccountSignUp()
     account_element.add_element('password').add_text($account_password)
     account_element.add_element('mail_address').add_text(account_mail_address)
     # Upload to server
-    response = nil
+    $response = nil
     # http = Net::HTTP.new($SERVER_ACCOUNT_HOST, 443)
     # http.use_ssl = true
     # http.verify_mode = OpenSSL::SSL::VERIFY_NONE
     http = Net::HTTP.new($SERVER_ACCOUNT_HOST, 80)
     http.start do |s|
-      response = s.post($SERVER_ACCOUNT_PATH, account_xml.to_s, $HTTP_REQUEST_HEADER)
+      $response = s.post($SERVER_ACCOUNT_PATH, account_xml.to_s, $HTTP_REQUEST_HEADER)
     end
     
     print "サーバーからのお返事\n"  
-    response.body.each_line do |line|
+    $response.body.each_line do |line|
       puts "> #{line}"
     end
   
-    if response.code == '200' then
+    if $response.code == '200' then
     # Account registration success:
       $is_account_register_finish = true
       $config['account']['name'] = $account_name
@@ -332,10 +333,10 @@ def doAccountSignUp()
 end
 def doAccountLogin()
   puts "★設定ファイル編集\n"
-  puts "#{WEB_SERVICE_NAME} アカウント名とパスワードを設定します"
-  puts "※アカウント名とパスワードが分からない場合、ご利用の#{WEB_SERVICE_NAME}クライアント（緋行跡報告ツール等）の#{$config_file}で確認できます"
+  puts "#{$variables['WEB_SERVICE_NAME']} アカウント名とパスワードを設定します"
+  puts "※アカウント名とパスワードが分からない場合、ご利用の#{$variables['WEB_SERVICE_NAME']}クライアント（緋行跡報告ツール等）の#{$config_file}で確認できます"
   puts 
-  puts "お持ちの #{WEB_SERVICE_NAME} アカウント名を入力してください"
+  puts "お持ちの #{$variables['WEB_SERVICE_NAME']} アカウント名を入力してください"
   
   # Enter account name
   print "アカウント名> "
@@ -417,14 +418,14 @@ def detectUploadAllMode()
     puts "GET http://#{$SERVER_LAST_TRACK_RECORD_HOST}#{$SERVER_LAST_TRACK_RECORD_PATH}?$game_id=#{$game_id}&$account_name=#{$account_name}"
   
     http = Net::HTTP.new($SERVER_LAST_TRACK_RECORD_HOST, 80)
-    response = nil
+    $response = nil
     http.start do |s|
-      response = s.get("#{$SERVER_LAST_TRACK_RECORD_PATH}?$game_id=#{$game_id}&$account_name=#{$account_name}", $HTTP_REQUEST_HEADER)
+      $response = s.get("#{$SERVER_LAST_TRACK_RECORD_PATH}?$game_id=#{$game_id}&$account_name=#{$account_name}", $HTTP_REQUEST_HEADER)
     end
   
-    if response.code == '200' or response.code == '204' then
-      if (response.body and response.body != '') then
-        $last_report_time = Time.parse(response.body)
+    if $response.code == '200' or $response.code == '204' then
+      if ($response.body and $response.body != '') then
+        $last_report_time = Time.parse($response.body)
         puts "サーバー登録済みの最終対戦時刻：#{$last_report_time.strftime('%Y/%m/%d %H:%M:%S')}"
       else
         $last_report_time = Time.at(0)
@@ -469,7 +470,7 @@ def doUploadData()
     # Split the match results and send to server
     0.step($trackrecord.length, TRACKRECORD_POST_SIZE) do |start_row_num|
       end_row_num = [start_row_num + TRACKRECORD_POST_SIZE - 1, $trackrecord.length - 1].min
-      response = nil # サーバーからのレスポンスデータ
+      $response = nil # サーバーからのレスポンスデータ
       
       puts "#{$trackrecord.length}件中の#{start_row_num + 1}件目～#{end_row_num + 1}件目を送信しています#{$is_force_insert ? "（強制インサートモード）" : ""}...\n"
       
@@ -481,22 +482,22 @@ def doUploadData()
 
       http = Net::HTTP.new($SERVER_TRACK_RECORD_HOST, 80)
       http.start do |s|
-        response = s.post($SERVER_TRACK_RECORD_PATH, trackrecord_xml_string, $HTTP_REQUEST_HEADER)
+        $response = s.post($SERVER_TRACK_RECORD_PATH, trackrecord_xml_string, $HTTP_REQUEST_HEADER)
       end
       
       # Display upload result from server
       puts "サーバーからのお返事"
-      response.body.each_line do |line|
+      $response.body.each_line do |line|
         puts "> #{line}"
       end
       puts
       
-      if response.code == '200' then
+      if $response.code == '200' then
         sleep 1
       # Meaning unknown code, keep original comments
       # 特に表示しない
       else
-        if response.body.index(PLEASE_RETRY_FORCE_INSERT)
+        if $response.body.index(PLEASE_RETRY_FORCE_INSERT)
           puts "強制インサートモードで報告しなおします。5秒後に報告再開...\n\n"
           sleep 5
           $is_force_insert = true
@@ -541,12 +542,14 @@ begin
   end
   
   # Do account setup if there isn't a exist valid account
-  unless $is_account_register_finish
+  if $is_account_register_finish != true
     doNewAccountSetup()
     puts "doNewAccountSetup\n"
+  end
     
   ## Get the account-based latest upload time from server
   $last_report_time = nil
+  $response = nil
   detectUploadAllMode()
   puts "detectUploadAllMode\n"
   puts "==========\n"
@@ -561,12 +564,10 @@ begin
   printExitMessage()
   puts "printExitMessage\n"
   puts "==========\n"
-end
 
-
-  ### Overall error handling ###
+### Overall error handling ###
 rescue => ex
-  if config && $config['account'] then
+  if $config && $config['account'] then
     $config['account']['name']     = '<secret>' if $config['account']['name']
     $config['account']['password'] = '<secret>' if $config['account']['password']
   end
@@ -579,12 +580,12 @@ rescue => ex
   puts ex.to_s
   puts
   puts ex.backtrace.join("\n")
-  puts (config ? config.to_yaml : "config が設定されていません。")
-  if response then
+  puts ($config ? $config.to_yaml : "config が設定されていません。")
+  if $response then
     puts
     puts "<サーバーからの最後のメッセージ>"
-    puts "HTTP status code : #{response.code}"
-    puts response.body
+    puts "HTTP status code : #{$response.code}"
+    puts $response.body
   end
   puts
   puts '### エラー詳細ここまで ###'
@@ -594,10 +595,10 @@ rescue => ex
     log.puts ex.to_s
     log.puts ex.backtrace.join("\n")
     log.puts config ? config.to_yaml : "config が設定されていません。"
-    if response then
+    if $response then
       log.puts "<サーバーからの最後のメッセージ>"
-      log.puts "HTTP status code : #{response.code}"
-      log.puts response.body
+      log.puts "HTTP status code : #{$response.code}"
+      log.puts $response.body
     end
     log.puts '********'
   end
