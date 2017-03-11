@@ -23,11 +23,6 @@ $is_all_report = false # Upload all mode
 $updateCheck = false # Detect update check
 $is_new_account = false # New account or login
 $is_account_register_finish = false # Detect if there is a account signed up
-# Match result
-$trackrecord = []
-# Meaning unknown variables, keep original comments
-$is_read_trackrecord_warning = false # 対戦結果読み込み時に警告があったかどうか
-$is_warning_exist = false # 警告メッセージがあるかどうか
 
 ### Load config to memory ###
 # Set config file path
@@ -56,6 +51,17 @@ end
 $config = load_config($config_file) 
 $env = load_config($env_file)
 $variables = load_config($var_file)
+
+# User account and password
+$account_name = ""
+$account_password = ""
+
+# Database file path
+$db_file_path = $config['database']['file_path'].to_s || $variables['DEFAULT_DATABASE_FILE_PATH']
+  
+# Tenco service edition(tenco.info/2, /5 etc)
+$game_id = $variables['DEFAULT_GAME_ID']
+
 
 # Seems these variables were used to find server.
 # SERVER_TRACK_RECORD
@@ -89,25 +95,21 @@ $HTTP_REQUEST_HEADER_STATIC = $variables['HTTP_OBFS4_REQUEST_HEADER'][1]
 # Vaild account name and email address characters, regular expression
 $ACCOUNT_NAME_REGEX = /\A[a-zA-Z0-9_]{1,32}\z/
 $MAIL_ADDRESS_REGEX = /\A[\x01-\x7F]+@(([-a-z0-9]+\.)*[a-z]+|\[\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\])\z/
-# Error Log path
-$ERROR_LOG_PATH = $variables['ERROR_LOG_PATH']
+
 # Etc
+
 $RECORD_SW_NAME = $variables['RECORD_SW_NAME']
 $DB_TR_TABLE_NAME = $variables['DB_TR_TABLE_NAME']
 $DUPLICATION_LIMIT_TIME_SECONDS = $variables['DUPLICATION_LIMIT_TIME_SECONDS']
 $TRACKRECORD_POST_SIZE = $variables['TRACKRECORD_POST_SIZE']
 $PLEASE_RETRY_FORCE_INSERT = $variables['PLEASE_RETRY_FORCE_INSERT']
-# User account and password
-$account_name = ""
-$account_password = ""
-
-# Database file path
-$db_file_path = $config['database']['file_path'].to_s || $variables['DEFAULT_DATABASE_FILE_PATH']
-  
-# Tenco service edition(tenco.info/2, /5 etc)
-$game_id = $variables['DEFAULT_GAME_ID']
-
-
+# Match result
+$trackrecord = []
+# Meaning unknown variables, keep original comments
+$is_read_trackrecord_warning = false # 対戦結果読み込み時に警告があったかどうか
+$is_warning_exist = false # 警告メッセージがあるかどうか
+# Error Log path
+$ERROR_LOG_PATH = $variables['ERROR_LOG_PATH']
 
 ###################################################
 # Environments were loaded, below are program code.
