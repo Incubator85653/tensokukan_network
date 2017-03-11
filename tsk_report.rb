@@ -17,22 +17,19 @@ require './lib/tenco_reporter/update_check'
 include TskNet::UpdateCheck
 require './lib/tenco_reporter/config_locale'
 
+# Some conditions to affect program behavior
 $is_force_insert = false # Forced insert mode. Set to false when getting started
 $is_all_report = false # Upload all mode
-$updateCheck = true # Detect update check
+$updateCheck = false # Detect update check
 $is_new_account = false # New account or login
-$accountSignedUp = false # Detect if there is a account signed up
 $is_account_register_finish = false # Detect if there is a account signed up
-
 # Match result
 $trackrecord = []
-
 # Meaning unknown variables, keep original comments
 $is_read_trackrecord_warning = false # 対戦結果読み込み時に警告があったかどうか
 $is_warning_exist = false # 警告メッセージがあるかどうか
 
-### Load config ###
-
+### Load config to memory ###
 # Set config file path
 $config_file = 'config.yaml'
 $config_default_file = 'config_default.yaml'
@@ -97,7 +94,7 @@ $account_name = ""
 $account_password = ""
 
 # Database file path
-$db_file_path = $config['database']['file_path'].to_s || DEFAULT_DATABASE_FILE_PATH
+$db_file_path = $config['database']['file_path'].to_s || $variables['DEFAULT_DATABASE_FILE_PATH']
   
 # Tenco service edition(tenco.info/2, /5 etc)
 $game_id = $variables['DEFAULT_GAME_ID']
@@ -116,9 +113,53 @@ puts "*** #{$variables['PROGRAM_NAME']} ***"
 puts "ver.#{$variables['PROGRAM_VERSION']}\n\n\n"
 
 # Define some common methods
+def saveConfigFile()
+  # Update configuration file
+  save_config($config_file, config)
+end
+def parseLaunchArguments()
+  ### Define available program launch options
+  opt = OptionParser.new
+
+  # If '-a' was specified
+  # Mark upload all mode to true
+  opt.on('-a') {|v| $is_all_report = true}
+
+  # Parse the arguments
+  opt.parse!(ARGV)
+end
+def importConfigToVariables()
+  # The following code seems to read some value from config to variables
+  
+  ##################################################
+  # Meaning unknown, keep original comments
+
+  # config.yaml がおかしいと代入時にエラーが出ることに対する格好悪い対策
+  config ||= {}
+  $config['account'] ||= {}
+  $config['database'] ||= {}
+
+  $account_name = $config['account']['name'].to_s || ''
+  $account_password = $config['account']['password'].to_s || ''
+   
+  ##################################################
+end
 def detectExistAccount()
+  # My account detect method(simple ver)
   if $config['account']['name'] == ""
-    $is_new_account = true
+    $is_account_register_finish = false
+  else
+    $is_account_register_finish = true
+  end
+  
+  # The old one account detect method(regulare expersion)
+  # Run at the same time to prevent one of them not work.
+  
+  # If $account_name == false or $account_name including invalid characters:
+  unless ($account_name && $account_name =~ $ACCOUNT_NAME_REGEX) then
+    $account_name = ''
+    $account_password = ''
+    $is_account_register_finish = false
   end
 end
 def doUpdateCheck()
@@ -333,132 +374,77 @@ def doAccountLogin()
   puts "アカウント情報を設定ファイルに保存しました。\n\n"
   puts "引き続き、対戦結果の報告をします...\n\n"
 end
-
-
-# Start
-begin
-  ### Define available program launch options
+def doNewAccountSetup()
+  puts "Can't find a valid account from config..."
+  puts "Is the first time to use Tensokukan Net?"
+  puts "★#{$variables['WEB_SERVICE_NAME']} アカウント設定（初回実行時）\n"  
+  puts "#{$variables['WEB_SERVICE_NAME']} をはじめてご利用の場合、「1」をいれて Enter キーを押してください。"  
+  puts "すでに緋行跡報告ツール等でアカウント登録済みの場合、「2」をいれて Enter キーを押してください。\n"  
+  puts
+  print "> "
   
-  opt = OptionParser.new
-  
-  # If '-a' was specified
-  # Mark upload all mode to true
-  opt.on('-a') {|v| $is_all_report = true}
-    
-  # Parse the arguments
-  opt.parse!(ARGV)
-  
-  ### Do update check if var is true
-  if $updateCheck
-    doUpdateCheck()
-  end
-  
-  
-  
-  ##################################################
-  # Meaning unknown, keep original comments
-  # config.yaml がおかしいと代入時にエラーが出ることに対する格好悪い対策
-  config ||= {}
-  $config['account'] ||= {}
-  $config['database'] ||= {}
-
-  $account_name = $config['account']['name'].to_s || ''
-  $account_password = $config['account']['password'].to_s || ''
-  
-  # Meaning unknown, keep original comments
-  # ゲームIDを設定ファイルから読み込む機能は -g オプションが必要
-  $game_id = $variables['DEFAULT_GAME_ID']
-  ##################################################
-    
-    
-    
-
-  ### Account settings (login / register)
-  # $account_name == false or $account_name including invalid characters:
-  unless ($account_name && $account_name =~ $ACCOUNT_NAME_REGEX) then
-    $is_new_account = false
-    $account_name = ''
-    $account_password = ''
-    $is_account_register_finish = false
-    
-    puts "Can't find a valid account from config..."
-    puts "Is the first time to use Tensokukan Net?"
-    puts "★#{$variables['WEB_SERVICE_NAME']} アカウント設定（初回実行時）\n"  
-    puts "#{$variables['WEB_SERVICE_NAME']} をはじめてご利用の場合、「1」をいれて Enter キーを押してください。"  
-    puts "すでに緋行跡報告ツール等でアカウント登録済みの場合、「2」をいれて Enter キーを押してください。\n"  
-    puts
-    print "> "
-    
-    while (input = gets)
-      input.strip!
-      if input == "1"
-        $is_new_account = true
-        puts
-        break
-      elsif input == "2"
-        $is_new_account = false
-        puts
-        break
-      end
-      
-      puts "\nInvalid option.\n"
-      puts "#{$variables['WEB_SERVICE_NAME']} をはじめてご利用の場合、「1」をいれて Enter キーを押してください。"  
-      puts "すでに緋行跡報告ツール等で #{$variables['WEB_SERVICE_NAME']} アカウントを登録済みの場合、「2」をいれて Enter キーを押してください。\n"  
+  while (input = gets)
+    input.strip!
+    if input == "1"
+      $is_new_account = true
       puts
-      print "> "
+      break
+    elsif input == "2"
+      $is_new_account = false
+      puts
+      break
     end
     
-    if $is_new_account
-      doAccountSignUp()
-    else
-      doAccountLogin()
+    puts "\nInvalid option.\n"
+    puts "#{$variables['WEB_SERVICE_NAME']} をはじめてご利用の場合、「1」をいれて Enter キーを押してください。"  
+    puts "すでに緋行跡報告ツール等で #{$variables['WEB_SERVICE_NAME']} アカウントを登録済みの場合、「2」をいれて Enter キーを押してください。\n"  
+    puts
+    print "> "
   end
   
-  puts $account_name
-  puts $account_password
+  if $is_new_account
+    doAccountSignUp()
+  else
+    doAccountLogin()
+  end
   
-  exit
-
-
-    
-  ## Get the account-based latest upload time from server
+  saveConfigFile()
+end
+def detectUploadAllMode()
+  # If upload all mode is false
   unless $is_all_report then
     puts "★登録済みの最終対戦時刻を取得"
     puts "GET http://#{$SERVER_LAST_TRACK_RECORD_HOST}#{$SERVER_LAST_TRACK_RECORD_PATH}?$game_id=#{$game_id}&$account_name=#{$account_name}"
-
+  
     http = Net::HTTP.new($SERVER_LAST_TRACK_RECORD_HOST, 80)
     response = nil
     http.start do |s|
       response = s.get("#{$SERVER_LAST_TRACK_RECORD_PATH}?$game_id=#{$game_id}&$account_name=#{$account_name}", $HTTP_REQUEST_HEADER)
     end
-
+  
     if response.code == '200' or response.code == '204' then
       if (response.body and response.body != '') then
-        last_report_time = Time.parse(response.body)
-        puts "サーバー登録済みの最終対戦時刻：#{last_report_time.strftime('%Y/%m/%d %H:%M:%S')}"
+        $last_report_time = Time.parse(response.body)
+        puts "サーバー登録済みの最終対戦時刻：#{$last_report_time.strftime('%Y/%m/%d %H:%M:%S')}"
       else
-        last_report_time = Time.at(0)
+        $last_report_time = Time.at(0)
         puts "サーバーには対戦結果未登録です"
       end
     else
       raise "最終対戦時刻の取得時にサーバーエラーが発生しました。処理を中断します。"
     end
-  else
-    puts "★全件報告モードです。サーバーからの登録済み最終対戦時刻の取得をスキップします。"
-    last_report_time = Time.at(0)
+  
+  # If upload all mode is true
+  puts "★全件報告モードです。サーバーからの登録済み最終対戦時刻の取得をスキップします。"
+  $last_report_time = Time.at(0)
   end
-  puts
-
-  ## Upload the match results
-  puts "★対戦結果送信"
-  puts ("#{RECORD_SW_NAME}の記録から、" + last_report_time.strftime('%Y/%m/%d %H:%M:%S') + " 以降の対戦結果を報告します。")
-  puts
-
+end
+def readDatafromDb()
   # Get the match results from database
   db_files = Dir::glob(NKF.nkf('-Wsxm0 --cp932', $db_file_path))
 
   if db_files.length > 0
-    $trackrecord, $is_read_trackrecord_warning = read_trackrecord(db_files, last_report_time + 1)
+    $trackrecord, $is_read_trackrecord_warning = read_trackrecord(db_files, $last_report_time + 1)
     $is_warning_exist = true if $is_read_trackrecord_warning
   else
     raise <<-MSG
@@ -468,16 +454,18 @@ begin
 ・#{$config_file} を変更した場合、設定が正しいかどうか、確認してください
     MSG
   end
-
+  
+  puts "★対戦結果送信"
+  puts ("#{RECORD_SW_NAME}の記録から、" + $last_report_time.strftime('%Y/%m/%d %H:%M:%S') + " 以降の対戦結果を報告します。")
   puts
-
+end
+def doUploadData()
   ## The uploading process
-
+  
   # Don't upload if queue is empty
   if $trackrecord.length == 0 then
     puts "報告対象データはありませんでした。"
   else
-    
     # Split the match results and send to server
     0.step($trackrecord.length, TRACKRECORD_POST_SIZE) do |start_row_num|
       end_row_num = [start_row_num + TRACKRECORD_POST_SIZE - 1, $trackrecord.length - 1].min
@@ -491,15 +479,6 @@ begin
         w.puts trackrecord_xml_string
       end
 
-      # Upload
-	  
-      # https = Net::HTTP.new($SERVER_TRACK_RECORD_HOST, 443)
-      # https.use_ssl = true
-      # https.verify_mode = OpenSSL::SSL::VERIFY_NONE
-      # https = Net::HTTP::Proxy(proxy_addr, proxy_port).new($SERVER_TRACK_RECORD_HOST,443)
-      # https.ca_file = '/usr/share/ssl/cert.pem'
-      # https.verify_depth = 5
-      # https.verify_mode = OpenSSL::SSL::VERIFY_PEER
       http = Net::HTTP.new($SERVER_TRACK_RECORD_HOST, 80)
       http.start do |s|
         response = s.post($SERVER_TRACK_RECORD_PATH, trackrecord_xml_string, $HTTP_REQUEST_HEADER)
@@ -514,8 +493,8 @@ begin
       
       if response.code == '200' then
         sleep 1
-		# Meaning unknown code, keep original comments
-        # 特に表示しない
+      # Meaning unknown code, keep original comments
+      # 特に表示しない
       else
         if response.body.index(PLEASE_RETRY_FORCE_INSERT)
           puts "強制インサートモードで報告しなおします。5秒後に報告再開...\n\n"
@@ -528,13 +507,8 @@ begin
       end
     end
   end
-
-  # Update configuration file
-  save_config($config_file, config)
-      
-  puts
-
-  # Exit message output
+end
+def printExitMessage()
   if $is_warning_exist then
     puts "報告処理は正常に終了しましたが、警告メッセージがあります。"
     puts "出力結果をご確認ください。"
@@ -545,8 +519,48 @@ begin
   else
     puts "報告処理が正常に終了しました。"
   end
-
   sleep 3
+end
+
+# Start
+begin
+  parseLaunchArguments()
+  puts "parseLaunchArguments\n"
+  puts "===========\n"
+  importConfigToVariables()
+  puts "importConfigToVariables\n"
+  puts "==========\n"
+  detectExistAccount()
+  puts "detectExistAccount\n"
+  puts "==========\n"
+
+  if $updateCheck
+    doUpdateCheck()
+    puts "doUpdateCheck\n"
+    puts "==========\n"
+  end
+  
+  # Do account setup if there isn't a exist valid account
+  unless $is_account_register_finish
+    doNewAccountSetup()
+    puts "doNewAccountSetup\n"
+    
+  ## Get the account-based latest upload time from server
+  $last_report_time = nil
+  detectUploadAllMode()
+  puts "detectUploadAllMode\n"
+  puts "==========\n"
+  readDatafromDb()
+  puts "readDatafromDb\n"
+  puts "==========\n"
+  doUploadData()
+  puts"doUploadData\n"
+  puts "==========\n"
+
+  # Exit message output
+  printExitMessage()
+  puts "printExitMessage\n"
+  puts "==========\n"
 end
 
 
