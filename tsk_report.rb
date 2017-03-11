@@ -123,7 +123,7 @@ puts "ver.#{$variables['PROGRAM_VERSION']}\n\n\n"
 # Define some common methods
 def saveConfigFile()
   # Update configuration file
-  save_config($config_file, config)
+  save_config($config_file, $config)
 end
 def printHTTPcode(response)
   puts "HTTP #{response.code}"
@@ -213,7 +213,7 @@ def doUpdateCheck()
 end
 def doAccountSignUp()
   # 空两行
-  puts "★新規 #{WEB_SERVICE_NAME} アカウント登録\n\n"
+  puts "★新規 #{$variables['WEB_SERVICE_NAME']} アカウント登録\n\n"
     
   # While loop until successful signed up
   while (!$is_account_register_finish)
@@ -233,23 +233,29 @@ def doAccountSignUp()
         print "希望アカウント名> "  
       end
     end
+    puts "Added account: #{$account_name}"
+    puts
     
     # Enter password
     puts "パスワードを入力してください（使用文字制限なし。4～16byte以内。アカウント名と同一禁止。）\n"  
     print "パスワード> "  
     while (input = gets)
       input.strip!
-      if input == $account_name
-        puts "Password must be different than account."
       if (input.length >= 4 and input.length <= 16 and input != $account_name) then
         $account_password = input
         break
       else
+        # Show some available warn
+        if input == $account_name
+          puts "Password must be different than account."
+        end
         puts "！パスワードは4～16byte以内で、アカウント名と別の文字列を入力してください"  
         print "パスワード> "  
       end
-    end 
-    
+    end
+    puts
+    puts "Added password: #{$account_password}"
+    puts
     print "パスワード（確認）> "  
     while (input = gets)
       input.strip!
@@ -291,10 +297,10 @@ def doAccountSignUp()
         print "メールアドレス> "  
       end
     end
-    end
     
     # Register new account on server
-    puts "サーバーにアカウントを登録しています...\n"  
+    puts "サーバーにアカウントを登録しています..."
+    puts  
     
     # Generate Account XML
     account_xml = REXML::Document.new
@@ -319,12 +325,12 @@ def doAccountSignUp()
     end
   
     if $response.code == '200' then
-    # Account registration success:
+      # Account registration success:
       $is_account_register_finish = true
       $config['account']['name'] = $account_name
       $config['account']['password'] = $account_password
       
-      save_config($config_file, config)
+      saveConfigFile()
       
       puts 
       puts "アカウント情報を設定ファイルに保存しました。"
