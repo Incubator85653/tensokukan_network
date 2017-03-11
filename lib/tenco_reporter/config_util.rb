@@ -23,13 +23,19 @@ module TencoReporter
     # コンフィグファイル保存
     def save_config(config_file, config)
       File.open(config_file, 'w') do |w|
-        w.puts "# #{PROGRAM_NAME}設定ファイル"
+        w.puts "# #{$variables['PROGRAM_NAME']}設定ファイル"
         w.puts "# かならず文字コードは UTF-8 または UTF-8N で保存してください。"
         w.puts "# メモ帳でも編集・保存できます。"
         w.puts config.to_yaml
       end
     end
     
+    # Save an Array
+    def array_save_config(config_file, config)
+      File.open(config_file, 'w') do |w|
+        w.write config.to_yaml
+      end
+    end
   end
 end
 

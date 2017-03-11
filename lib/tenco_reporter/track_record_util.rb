@@ -1,5 +1,6 @@
 # coding: utf-8
 
+require 'rubygems'
 require 'sqlite3'
 require 'rexml/document'
 require 'nkf'
@@ -14,7 +15,8 @@ module TencoReporter
       is_warning_exist = false
 
       db_files.each do |db_file|
-        puts "#{NKF.nkf('-Swxm0 --cp932', db_file)} から対戦結果を抽出...\n"
+        puts "#{NKF.nkf('-Swxm0 --cp932', db_file)} から対戦結果を抽出..."
+        puts
         begin
           trackrecord.concat(_read_trackrecord(db_file, last_report_time + 1))
         rescue => ex
@@ -106,7 +108,7 @@ module TencoReporter
           SELECT
             *
           FROM
-            #{DB_TR_TABLE_NAME}
+            #{$DB_TR_TABLE_NAME}
           WHERE
               timestamp > #{time_to_filetime(last_report_time).to_i}
             AND COALESCE(p1name, '') != ''
@@ -160,7 +162,7 @@ module TencoReporter
         unless last_timestamp
           last_timestamp = timestamp
         else
-          if timestamp <= last_timestamp + DUPLICATION_LIMIT_TIME_SECONDS
+          if timestamp <= last_timestamp + $DUPLICATION_LIMIT_TIME_SECONDS
             delete_trackrecord << t
           else
             last_timestamp = timestamp
