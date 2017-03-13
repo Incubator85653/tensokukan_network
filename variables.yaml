@@ -1,6 +1,7 @@
 ﻿# Program information
 PROGRAM_VERSION: '0.04'
 PROGRAM_NAME: '天則観報告ツール'
+PROGRAM_BRANCH_NAME: 'TskNet 0.05'
 
 # Environment / configuration
 
@@ -40,3 +41,10 @@ DEFAULT_DATABASE_FILE_PATH: '../*.db'
 
 # Log file path
 ERROR_LOG_PATH: 'error.txt'
+
+# On build debug option
+
+# DEBUG_EXIT is often used during "exerb".
+# Program will require all reference and exit directly.
+# Once exe generated, set to false to execute program features.
+DEBUG_EXIT: true

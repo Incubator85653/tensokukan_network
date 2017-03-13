@@ -120,7 +120,10 @@ $ERROR_LOG_PATH = $variables['ERROR_LOG_PATH']
 # Print program name and version and something else
 # at the very beginning
 puts "*** #{$variables['PROGRAM_NAME']} ***"
-puts "ver.#{$variables['PROGRAM_VERSION']}\n\n\n"
+puts "ver.#{$variables['PROGRAM_VERSION']}, branch.#{$variables['PROGRAM_BRANCH_NAME']}"
+puts
+puts
+puts
 
 # Define some common methods
 def saveConfigFile()
@@ -157,6 +160,12 @@ def importConfigToVariables()
   $account_password = $config['account']['password'].to_s || ''
    
   ##################################################
+end
+def doDebugAction()
+  if $variables['DEBUG_EXIT']
+    puts "Debug Action: Exit."
+    exit
+  end
 end
 def detectExistAccount()
   # My account detect method(simple ver)
@@ -550,6 +559,7 @@ end
 begin
   parseLaunchArguments()
   importConfigToVariables()
+  doDebugAction()
   detectExistAccount()
 
   if $updateCheck
