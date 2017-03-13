@@ -11,7 +11,7 @@ set del=del /q
 @set errorTxt="error.txt"
 @set lastReportTrack="last_report_trackrecord.xml"
 
-@set ProgramName=tsk_report
+@set ProgramName=tsk_net
 
 @set TskNetExe="%ProgramName%.exe"
 @set TskNetExy="%ProgramName%.exy"

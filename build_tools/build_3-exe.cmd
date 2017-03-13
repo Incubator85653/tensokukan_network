@@ -1,2 +1,4 @@
-exerb tsk_report.exy
+@set exy=tsk_report.exy
+
+exerb %exy%
 @cmd
