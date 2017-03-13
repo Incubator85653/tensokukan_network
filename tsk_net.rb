@@ -190,7 +190,7 @@ def detectExistAccount()
 end
 def doUpdateCheck()
   begin
-    latest_version = get_latest_version($CLIENT_LATEST_VERSION_HOST, $CLIENT_LATEST_VERSION_PATH)
+    latest_version = get_latest_version_direct($CLIENT_LATEST_VERSION_HOST, $CLIENT_LATEST_VERSION_PATH)
     
     case
     when latest_version.nil?
