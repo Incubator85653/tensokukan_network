@@ -1,0 +1,7 @@
+resource:
+  icon:
+    -
+      width : 256
+      height: 256
+      color : 32
+      file  : icon\BlackFace.ico
