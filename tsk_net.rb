@@ -158,6 +158,8 @@ def importConfigToVariables()
 
   $account_name = $config['account']['name'].to_s || ''
   $account_password = $config['account']['password'].to_s || ''
+    
+  $updateCheck = $variables['UPDATE_CHECK']
    
   ##################################################
 end

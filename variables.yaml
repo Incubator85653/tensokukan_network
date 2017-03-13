@@ -5,6 +5,9 @@ PROGRAM_BRANCH_NAME: 'TskNet 0.05'
 
 # Environment / configuration
 
+# Update check
+UPDATE_CHECK: false
+
 # Number of match results to be sent at once
 TRACKRECORD_POST_SIZE: 250
 
