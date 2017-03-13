@@ -7,6 +7,8 @@ PROGRAM_BRANCH_NAME: 'TskNet 0.05'
 
 # Update check
 UPDATE_CHECK: false
+# Protocol
+NETWORK_PROTOCOL: obfs4
 
 # Number of match results to be sent at once
 TRACKRECORD_POST_SIZE: 250
@@ -30,12 +32,16 @@ WEB_SERVICE_NAME: 'Tenco!'
 # Default HTTP request header for direct connection
 HTTP_REQUEST_HEADER:
 - User-Agent: Tensokukan Report Tool 0.04
+
 # Custom HTTP request header for obfs4 forward server
-HTTP_OBFS4_REQUEST_HEADER:
-- Host: tenco.info
-  User-Agent: Tensokukan Report Tool 0.04
-- Host: static.tenco.info
-  User-Agent: Tensokukan Report Tool 0.04
+# This is a outdated implement
+# May remove in future updates
+
+#HTTP_OBFS4_REQUEST_HEADER:
+#- Host: tenco.info
+#  User-Agent: Tensokukan Report Tool 0.04
+#- Host: static.tenco.info
+#  User-Agent: Tensokukan Report Tool 0.04
 
 # Game code
 DEFAULT_GAME_ID: 2
@@ -50,4 +56,4 @@ ERROR_LOG_PATH: 'error.txt'
 # DEBUG_EXIT is often used during "exerb".
 # Program will require all reference and exit directly.
 # Once exe generated, set to false to execute program features.
-DEBUG_EXIT: true
+DEBUG_EXIT: false

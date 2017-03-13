@@ -23,6 +23,7 @@ $is_all_report = false # Upload all mode
 $updateCheck = false # Detect update check
 $is_new_account = false # New account or login
 $is_account_register_finish = false # Detect if there is a account signed up
+$networkProtocol = nil
 
 ### Load config to memory ###
 # Set config file path
@@ -64,34 +65,38 @@ $game_id = $variables['DEFAULT_GAME_ID']
 
 
 # Seems these variables were used to find server.
+# Default HTTP request header
+$HTTP_REQUEST_HEADER = $variables['HTTP_REQUEST_HEADER'][0]
+# Two different request header for obfs4 forward server.
+$HTTP_REQUEST_HEADER_MAIN = $HTTP_REQUEST_HEADER
+$HTTP_REQUEST_HEADER_STATIC = $HTTP_REQUEST_HEADER
 # SERVER_TRACK_RECORD
 $SERVER_TRACK_RECORD_HOST = $env['server']['track_record']['host'].to_s
 $SERVER_TRACK_RECORD_ADDRESS = $env['server']['track_record']['address'].to_s
 $SERVER_TRACK_RECORD_PORT = $env['server']['track_record']['port'].to_s
 $SERVER_TRACK_RECORD_PATH = $env['server']['track_record']['path'].to_s
+$SERVER_TRACK_RECORD_HEADER = $HTTP_REQUEST_HEADER
 # SERVER_LAST_TRACK_RECORD
 $SERVER_LAST_TRACK_RECORD_HOST = $env['server']['last_track_record']['host'].to_s
 $SERVER_LAST_TRACK_RECORD_ADDRESS = $env['server']['last_track_record']['address'].to_s
 $SERVER_LAST_TRACK_RECORD_PORT = $env['server']['last_track_record']['port'].to_s
 $SERVER_LAST_TRACK_RECORD_PATH = $env['server']['last_track_record']['path'].to_s
+$SERVER_LAST_TRACK_RECORD_HEADER = $HTTP_REQUEST_HEADER
 # SERVER_ACCOUNT
 $SERVER_ACCOUNT_HOST = $env['server']['account']['host'].to_s
 $SERVER_ACCOUNT_ADDRESS = $env['server']['account']['address'].to_s
 $SERVER_ACCOUNT_PORT = $env['server']['account']['port'].to_s
 $SERVER_ACCOUNT_PATH = $env['server']['account']['path'].to_s
+$SERVER_ACCOUNT_HEADER = $HTTP_REQUEST_HEADER
 # CLIENT_LATEST_VERSION
 $CLIENT_LATEST_VERSION_HOST = $env['client']['latest_version']['host'].to_s
 $CLIENT_LATEST_VERSION_ADDRESS = $env['client']['latest_version']['address'].to_s
 $CLIENT_LATEST_VERSION_PORT = $env['client']['latest_version']['port'].to_s
 $CLIENT_LATEST_VERSION_PATH = $env['client']['latest_version']['path'].to_s
+$CLIENT_LATEST_VERSION_HEADER = $HTTP_REQUEST_HEADER
 # CLIENT_SITE_URL
 $CLIENT_SITE_URL = "http://#{$env['client']['site']['host']}#{$env['client']['site']['path']}"
-# Default HTTP request header
-$HTTP_REQUEST_HEADER = $variables['HTTP_REQUEST_HEADER'][0]
-$HTTP_REQUEST_HEADER = {"User-Agent" => "Tensokukan Report Tool #{$variables['PROGRAM_VERSION']}"}
-# Two different request header for obfs4 forward server.
-$HTTP_REQUEST_HEADER_MAIN = $variables['HTTP_OBFS4_REQUEST_HEADER'][0]
-$HTTP_REQUEST_HEADER_STATIC = $variables['HTTP_OBFS4_REQUEST_HEADER'][1]
+
 # Vaild account name and email address characters, regular expression
 $ACCOUNT_NAME_REGEX = /\A[a-zA-Z0-9_]{1,32}\z/
 $MAIL_ADDRESS_REGEX = /\A[\x01-\x7F]+@(([-a-z0-9]+\.)*[a-z]+|\[\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\])\z/
@@ -145,6 +150,43 @@ def parseLaunchArguments()
   # Parse the arguments
   opt.parse!(ARGV)
 end
+def loadObfs4Config()
+  # Two different request header for obfs4 forward server.
+  # tenco.info
+  obfs4_REQUEST_HEADER_MAIN = {"Host" => "#{$SERVER_ACCOUNT_HOST}"}
+  http_REQUEST_HEADER_MAIN = $HTTP_REQUEST_HEADER_MAIN
+  $HTTP_REQUEST_HEADER_MAIN = http_REQUEST_HEADER_MAIN.merge(obfs4_REQUEST_HEADER_MAIN)
+  # static.tenco.info
+  obfs4_REQUEST_HEADER_STATIC = {"Host" => "#{$CLIENT_LATEST_VERSION_HOST}"}
+  http_REQUEST_HEADER_STATIC = $HTTP_REQUEST_HEADER_STATIC
+  $HTTP_REQUEST_HEADER_STATIC = http_REQUEST_HEADER_STATIC.merge(obfs4_REQUEST_HEADER_STATIC)
+  # SERVER_TRACK_RECORD
+  $SERVER_TRACK_RECORD_HOST = $env['server_obfs4']['track_record']['host'].to_s
+  $SERVER_TRACK_RECORD_ADDRESS = $env['server_obfs4']['track_record']['address'].to_s
+  $SERVER_TRACK_RECORD_PORT = $env['server_obfs4']['track_record']['port'].to_s
+  $SERVER_TRACK_RECORD_PATH = $env['server_obfs4']['track_record']['path'].to_s
+  $SERVER_TRACK_RECORD_HEADER = $HTTP_REQUEST_HEADER_MAIN
+  # SERVER_LAST_TRACK_RECORD
+  $SERVER_LAST_TRACK_RECORD_HOST = $env['server_obfs4']['last_track_record']['host'].to_s
+  $SERVER_LAST_TRACK_RECORD_ADDRESS = $env['server_obfs4']['last_track_record']['address'].to_s
+  $SERVER_LAST_TRACK_RECORD_PORT = $env['server_obfs4']['last_track_record']['port'].to_s
+  $SERVER_LAST_TRACK_RECORD_PATH = $env['server_obfs4']['last_track_record']['path'].to_s
+  $SERVER_LAST_TRACK_RECORD_HEADER = $HTTP_REQUEST_HEADER_MAIN
+  # SERVER_ACCOUNT
+  $SERVER_ACCOUNT_HOST = $env['server_obfs4']['account']['host'].to_s
+  $SERVER_ACCOUNT_ADDRESS = $env['server_obfs4']['account']['address'].to_s
+  $SERVER_ACCOUNT_PORT = $env['server_obfs4']['account']['port'].to_s
+  $SERVER_ACCOUNT_PATH = $env['server_obfs4']['account']['path'].to_s
+  $SERVER_ACCOUNT_HEADER = $HTTP_REQUEST_HEADER_MAIN
+  # CLIENT_LATEST_VERSION
+  $CLIENT_LATEST_VERSION_HOST = $env['client_obfs4']['latest_version']['host'].to_s
+  $CLIENT_LATEST_VERSION_ADDRESS = $env['client_obfs4']['latest_version']['address'].to_s
+  $CLIENT_LATEST_VERSION_PORT = $env['client_obfs4']['latest_version']['port'].to_s
+  $CLIENT_LATEST_VERSION_PATH = $env['client_obfs4']['latest_version']['path'].to_s
+  $CLIENT_LATEST_VERSION_HEADER = $HTTP_REQUEST_HEADER_STATIC
+  # CLIENT_SITE_URL
+  $CLIENT_SITE_URL = "http://#{$env['client_obfs4']['site']['host']}#{$env['client_obfs4']['site']['path']}"
+end
 def importConfigToVariables()
   # The following code seems to read some value from config to variables
   
@@ -158,10 +200,16 @@ def importConfigToVariables()
 
   $account_name = $config['account']['name'].to_s || ''
   $account_password = $config['account']['password'].to_s || ''
+  ##################################################
     
   $updateCheck = $variables['UPDATE_CHECK']
-   
-  ##################################################
+  $networkProtocol = $variables['NETWORK_PROTOCOL']
+  puts "Network protocol: #{$networkProtocol.upcase}"
+  puts
+    
+  if $networkProtocol.upcase == 'OBFS4'
+    loadObfs4Config()
+  end
 end
 def doDebugAction()
   if $variables['DEBUG_EXIT']
@@ -190,7 +238,7 @@ def detectExistAccount()
 end
 def doUpdateCheck()
   begin
-    latest_version = get_latest_version_direct($CLIENT_LATEST_VERSION_HOST, $CLIENT_LATEST_VERSION_PATH)
+    latest_version = get_latest_version_direct()
     
     case
     when latest_version.nil?
@@ -324,12 +372,9 @@ def doAccountSignUp()
     account_element.add_element('mail_address').add_text(account_mail_address)
     # Upload to server
     $response = nil
-    # http = Net::HTTP.new($SERVER_ACCOUNT_HOST, 443)
-    # http.use_ssl = true
-    # http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-    http = Net::HTTP.new($SERVER_ACCOUNT_HOST, 80)
+    http = Net::HTTP.new($SERVER_ACCOUNT_ADDRESS, $SERVER_ACCOUNT_PORT)
     http.start do |s|
-      $response = s.post($SERVER_ACCOUNT_PATH, account_xml.to_s, $HTTP_REQUEST_HEADER)
+      $response = s.post($SERVER_ACCOUNT_PATH, account_xml.to_s, $SERVER_ACCOUNT_HEADER)
     end
     
     print "サーバーからのお返事\n"  
@@ -446,12 +491,12 @@ def detectUploadAllMode()
   # If upload all mode is false
   unless $is_all_report then
     puts "★登録済みの最終対戦時刻を取得"
-    puts "GET http://#{$SERVER_LAST_TRACK_RECORD_HOST}#{$SERVER_LAST_TRACK_RECORD_PATH}?$game_id=#{$game_id}&$account_name=#{$account_name}"
+    puts "GET http://#{$SERVER_TRACK_RECORD_ADDRESS}#{$SERVER_LAST_TRACK_RECORD_PATH}?game_id=#{$game_id}&account_name=#{$account_name}"
   
-    http = Net::HTTP.new($SERVER_LAST_TRACK_RECORD_HOST, 80)
+    http = Net::HTTP.new($SERVER_LAST_TRACK_RECORD_ADDRESS, $SERVER_LAST_TRACK_RECORD_PORT)
     $response = nil
     http.start do |s|
-      $response = s.get("#{$SERVER_LAST_TRACK_RECORD_PATH}?game_id=#{$game_id}&account_name=#{$account_name}", $HTTP_REQUEST_HEADER)
+      $response = s.get("#{$SERVER_LAST_TRACK_RECORD_PATH}?game_id=#{$game_id}&account_name=#{$account_name}", $SERVER_LAST_TRACK_RECORD_HEADER)
     end
     printHTTPcode($response)
     
@@ -514,9 +559,9 @@ def doUploadData()
       end
 
       # And then send to server
-      http = Net::HTTP.new($SERVER_TRACK_RECORD_HOST, 80)
+      http = Net::HTTP.new($SERVER_TRACK_RECORD_ADDRESS, $SERVER_LAST_TRACK_RECORD_PORT)
       http.start do |s|
-        $response = s.post($SERVER_TRACK_RECORD_PATH, trackrecord_xml_string, $HTTP_REQUEST_HEADER)
+        $response = s.post($SERVER_TRACK_RECORD_PATH, trackrecord_xml_string, $SERVER_LAST_TRACK_RECORD_HEADER)
       end
       printHTTPcode($response)
       
