@@ -8,7 +8,8 @@ PROGRAM_BRANCH_NAME: 'TskNet 0.05'
 # Update check
 UPDATE_CHECK: false
 # Protocol
-NETWORK_PROTOCOL: obfs4
+# available: http / obfs4
+NETWORK_PROTOCOL: http
 
 # Number of match results to be sent at once
 TRACKRECORD_POST_SIZE: 250

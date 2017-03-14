@@ -27,31 +27,53 @@ $networkProtocol = nil
 
 ### Load config to memory ###
 # Set config file path
+$string_file = 'string.yaml'
 $config_file = 'config.yaml'
-$config_default_file = 'config_default.yaml'
 $env_file = 'env.yaml'
 $var_file = 'variables.yaml'
+# Create general variables
+$stringYaml = nil
+$config = nil
+$env = nil
+$variables = nil
 
 # If tsk net config file was missing, print an error and exit program.
-unless (File.exist?($env_file) && File.exist?($var_file) && File.exist?($config_file))
-  puts "Error: one or more config files were missing"
-  # Print all the config status on screen to help debugging
-  puts $config_file
-  puts File.exist?($config_file)
-  puts $env_file
-  puts File.exist?($env_file)
-  puts $var_file
-  puts File.exist?($var_file)
-  puts "Press Enter to exit."
-  
+exist_string = File.exist?($string_file)
+exist_config = File.exist?($config_file)
+exist_env = File.exist?($env_file)
+exist_variables = File.exist?($var_file)
+
+if exist_string
+  $stringYaml = load_config($string_file)
+else
+  puts "#{string_file}: #{exist_string}"
   gets
   exit
 end
 
-# Read config to RAM
-$config = load_config($config_file) 
-$env = load_config($env_file)
-$variables = load_config($var_file)
+if exist_config
+  $config = load_config($config_file)
+else
+  puts "#{config_file}: #{exist_config}"
+end
+if exist_env
+  $env = load_config($env_file)
+else
+  puts "#{env_file}: #{exist_env}"
+end
+if exist_variables
+  $variables = load_config($var_file)
+else
+  puts "#{var_file}: #{exist_variables}"
+end
+
+unless exist_config & exist_env & exist_variables
+  puts $stringYaml['error']['config_file_missing']
+  gets
+  exit
+end
+
+$NEW_LINE = "\n"  
 
 # User account and password
 $account_name = ""
@@ -102,12 +124,13 @@ $ACCOUNT_NAME_REGEX = /\A[a-zA-Z0-9_]{1,32}\z/
 $MAIL_ADDRESS_REGEX = /\A[\x01-\x7F]+@(([-a-z0-9]+\.)*[a-z]+|\[\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\])\z/
 
 # Etc
-
 $RECORD_SW_NAME = $variables['RECORD_SW_NAME']
 $DB_TR_TABLE_NAME = $variables['DB_TR_TABLE_NAME']
 $DUPLICATION_LIMIT_TIME_SECONDS = $variables['DUPLICATION_LIMIT_TIME_SECONDS']
 $TRACKRECORD_POST_SIZE = $variables['TRACKRECORD_POST_SIZE']
 $PLEASE_RETRY_FORCE_INSERT = $variables['PLEASE_RETRY_FORCE_INSERT']
+$WEB_SERVICE_NAME = $variables['WEB_SERVICE_NAME']
+$error_strings = $stringYaml['error']
 # Match result
 $trackrecord = []
 # Meaning unknown variables, keep original comments
@@ -119,18 +142,18 @@ $ERROR_LOG_PATH = $variables['ERROR_LOG_PATH']
 ###################################################
 # Environments were loaded, below are program code.
 ###################################################
-  
-    
-  
-# Print program name and version and something else
-# at the very beginning
-puts "*** #{$variables['PROGRAM_NAME']} ***"
-puts "ver.#{$variables['PROGRAM_VERSION']}, branch.#{$variables['PROGRAM_BRANCH_NAME']}"
-puts
-puts
-puts
 
 # Define some common methods
+def printWellcomeMessage()
+  # Print program name and version and something else
+  # at the very beginning
+  puts $stringYaml['wellcome_message']['branch_name']
+  puts
+  puts "#{$stringYaml['wellcome_message']['str_api_version']} #{$variables['PROGRAM_VERSION']}"
+  puts "#{$stringYaml['wellcome_message']['str_branch_version']} #{$stringYaml['wellcome_message']['branch_version']}"
+  puts "#{$stringYaml['wellcome_message']['str_network_protocol']} #{$networkProtocol.upcase}"
+  puts $NEW_LINE*3
+end
 def saveConfigFile()
   # Update configuration file
   save_config($config_file, $config)
@@ -204,8 +227,6 @@ def importConfigToVariables()
     
   $updateCheck = $variables['UPDATE_CHECK']
   $networkProtocol = $variables['NETWORK_PROTOCOL']
-  puts "Network protocol: #{$networkProtocol.upcase}"
-  puts
     
   if $networkProtocol.upcase == 'OBFS4'
     loadObfs4Config()
@@ -273,16 +294,26 @@ def doUpdateCheck()
   end
 end
 def doAccountSignUp()
-  # 空两行
-  puts "★新規 #{$variables['WEB_SERVICE_NAME']} アカウント登録\n\n"
+  strings = $stringYaml['do_account_signup']
+    
+  #puts "★新規 #{$variables['$WEB_SERVICE_NAME']} アカウント登録\n\n"
+  puts strings['new_account_signup'] % [$WEB_SERVICE_NAME] + $NEW_LINE*2
     
   # While loop until successful signed up
   while (!$is_account_register_finish)
-  # Enter account name
-    puts "希望アカウント名を入力してください\n"  
-    puts "アカウント名はURLの一部として使用されます。\n"  
-    puts "（半角英数とアンダースコア_のみ使用可能。32文字以内）\n"  
-    print "希望アカウント名> "  
+    #Enter account name
+    
+    #puts "希望アカウント名を入力してください\n"  
+    #puts "アカウント名はURLの一部として使用されます。\n"  
+    #puts "（半角英数とアンダースコア_のみ使用可能。32文字以内）\n" 
+    #print "希望アカウント名> " 
+    puts strings['signup_description']
+    puts strings['account_name_rules']
+    puts
+      
+    print strings['enter_account_name']
+    print $stringYaml['input']
+    
     while (input = gets)
       input.strip!
       if input =~ $ACCOUNT_NAME_REGEX then
@@ -290,57 +321,101 @@ def doAccountSignUp()
         puts 
         break
       else
-        puts "！希望アカウント名は半角英数とアンダースコア_のみで、32文字以内で入力してください"  
-        print "希望アカウント名> "  
+        #puts "！希望アカウント名は半角英数とアンダースコア_のみで、32文字以内で入力してください"  
+        #print "希望アカウント名> "  
+        puts strings['account_name_rules']
+        puts
+
+        print strings['enter_account_name']
+        print $stringYaml['input']
       end
     end
-    puts "Added account: #{$account_name}"
+    puts strings['added_account'] % [$account_name]
     puts
     
     # Enter password
-    puts "パスワードを入力してください（使用文字制限なし。4～16byte以内。アカウント名と同一禁止。）\n"  
-    print "パスワード> "  
+    
+    #puts "パスワードを入力してください（使用文字制限なし。4～16byte以内。アカウント名と同一禁止。）\n"  
+    #print "パスワード> "
+    puts strings['password_rules']
+    puts
+    
+    print strings['enter_password']
+    print $stringYaml['input']
+      
     while (input = gets)
       input.strip!
       if (input.length >= 4 and input.length <= 16 and input != $account_name) then
         $account_password = input
+        puts
         break
       else
-        # Show some available warn
+        # If entered a password that same as account
+        # Show a warn and retry
         if input == $account_name
-          puts "Password must be different than account."
+          puts strings['pwd_same_as_account']
+          puts
         end
-        puts "！パスワードは4～16byte以内で、アカウント名と別の文字列を入力してください"  
-        print "パスワード> "  
+        #puts "！パスワードは4～16byte以内で、アカウント名と別の文字列を入力してください"  
+        #print "パスワード> "
+        puts strings['password_rules']
+        puts
+        
+        print strings['enter_password']
+        print $stringYaml['input']
       end
     end
+
+    puts strings['added_password'] % [$account_password]
     puts
-    puts "Added password: #{$account_password}"
-    puts
-    print "パスワード（確認）> "  
+    print strings['confirm_password']
+    print $stringYaml['input']
+      
     while (input = gets)
       input.strip!
       if ($account_password == input) then
-        puts 
+        puts
+        puts strings['password_confirmed']
+        puts
         break
       else
-        puts "！パスワードが一致しません\n"  
-        print "パスワード（確認）> "  
+        puts strings['password_mismatch']
+        puts
+        
+        print strings['confirm_password']
+        print $stringYaml['input']
       end
     end
     
     # Enter email address
-    puts "メールアドレスを入力してください（入力は任意）\n"  
-    puts "※パスワードを忘れたときの連絡用にのみ使用します。\n"  
-    puts "※記入しない場合、パスワードの連絡はできません。\n"  
-    print "メールアドレス> "  
+    
+    #puts "メールアドレスを入力してください（入力は任意）\n"  
+    #puts "※パスワードを忘れたときの連絡用にのみ使用します。\n"  
+    #puts "※記入しない場合、パスワードの連絡はできません。\n"  
+    #print "メールアドレス> "
+    
+    puts strings['email_rules']
+    puts
+    
+    print strings['enter_email']
+    print $stringYaml['input']
+    
     while (input = gets)
       input.strip!
       if (input == '') then
         account_mail_address = ''
-        puts "メールアドレスは登録しません。"  
+        #puts "メールアドレスは登録しません。"
         puts
-        break
+        puts strings['skip_email']
+        puts strings['skip_email_disabled']
+        puts
+        
+        print strings['enter_email']
+        print $stringYaml['input']
+        # Skip email in Tsk 2017 was disabled
+        # Must assign an email address to sign up
+        #break
+        
       elsif input =~ $MAIL_ADDRESS_REGEX and input.length <= 256 then
         # Fix a potential problem
         # Add downcase for input
@@ -352,16 +427,38 @@ def doAccountSignUp()
         # Since Tsk 2017 build 1
         account_mail_address = input.downcase
         puts
+        puts strings['added_email'] % [account_mail_address]
+        puts
         break
       else
-        puts "！メールアドレスは正しい形式で、256byte以内にて入力してください"  
-        print "メールアドレス> "  
+        puts
+        #puts "！メールアドレスは正しい形式で、256byte以内にて入力してください"  
+        #print "メールアドレス> "  
+        puts strings['email_invalid']
+        puts
+        
+        print strings['enter_email']
+        print $stringYaml['input']
       end
     end
     
+    # Confirm sign up informations
+    puts strings['confirm_info']
+    puts
+    puts strings['added_account'] % [$account_name]
+    puts strings['added_password'] % [$account_password]
+    puts strings['added_email'] % [account_mail_address]
+    puts
+    puts strings['start_signup']
+    print $stringYaml['input']
+    gets
+    puts
+    
+    
     # Register new account on server
-    puts "サーバーにアカウントを登録しています..."
-    puts  
+    #puts "サーバーにアカウントを登録しています..."
+    puts strings['signup_requesting']
+    puts
     
     # Generate Account XML
     account_xml = REXML::Document.new
@@ -377,9 +474,12 @@ def doAccountSignUp()
       $response = s.post($SERVER_ACCOUNT_PATH, account_xml.to_s, $SERVER_ACCOUNT_HEADER)
     end
     
-    print "サーバーからのお返事\n"  
+    #print "サーバーからのお返事\n" 
+    puts strings['signup_server_response']
+    puts 
     $response.body.each_line do |line|
-      puts "> #{line}"
+      #puts "> #{line}"
+      puts "#{$stringYaml['input']}#{line}"
     end
   
     if $response.code == '200' then
@@ -391,56 +491,89 @@ def doAccountSignUp()
       saveConfigFile()
       
       puts 
-      puts "アカウント情報を設定ファイルに保存しました。"
-      puts "サーバーからのお返事の内容をご確認ください。"
-      puts
-      puts "Enter キーを押すと、続いて対戦結果の報告をします..."
+      #puts "アカウント情報を設定ファイルに保存しました。"
+      #puts "サーバーからのお返事の内容をご確認ください。"
+      #puts
+      #puts "Enter キーを押すと、続いて対戦結果の報告をします..."
+      puts strings['signup_success']
       gets
       
-      puts "引き続き、対戦結果の報告をします..."
+      #puts "引き続き、対戦結果の報告をします..."
+      puts strings['signup_end_message']
       puts
     else
     # Account registration failure:
-      puts "もう一度アカウント登録をやり直します...\n\n"
-      puts "Press Enter to retry."
+      puts
+      #puts "もう一度アカウント登録をやり直します..."
+      puts strings['signup_failed']
       gets
     end
   end
 end
 def doAccountLogin()
-  puts "★設定ファイル編集\n"
-  puts "#{$variables['WEB_SERVICE_NAME']} アカウント名とパスワードを設定します"
-  puts "※アカウント名とパスワードが分からない場合、ご利用の#{$variables['WEB_SERVICE_NAME']}クライアント（緋行跡報告ツール等）の#{$config_file}で確認できます"
-  puts 
-  puts "お持ちの #{$variables['WEB_SERVICE_NAME']} アカウント名を入力してください"
+  strings = $stringYaml['do_account_login']
+  
+  # Show introduction
+    
+  #puts "★設定ファイル編集\n"
+  #puts "#{$variables['$WEB_SERVICE_NAME']} アカウント名とパスワードを設定します"
+  #puts "※アカウント名とパスワードが分からない場合、ご利用の#{$variables['$WEB_SERVICE_NAME']}クライアント（緋行跡報告ツール等）の#{$config_file}で確認できます"
+  #puts "お持ちの #{$variables['$WEB_SERVICE_NAME']} アカウント名を入力してください"
+  #print "アカウント名> "
+    
+  puts strings['account_edit']
+  puts strings['edit_description'] % [$WEB_SERVICE_NAME, $WEB_SERVICE_NAME, $WEB_SERVICE_NAME]
+  puts strings['account_name_rules']
+  puts
   
   # Enter account name
-  print "アカウント名> "
+  print strings['enter_account_name']
+  print $stringYaml['input']
+
   while (input = gets)
     input.strip!
     if input =~ $ACCOUNT_NAME_REGEX then
       $account_name = input
-      puts 
+      puts
+      puts strings['added_account'] % [$account_name]
+      puts
       break
     else
-      puts "！アカウント名は半角英数とアンダースコア_のみで、32文字以内で入力してください"
+      #puts "！アカウント名は半角英数とアンダースコア_のみで、32文字以内で入力してください"
+      puts strings['account_name_rules']
+      puts
     end
-    print "アカウント名> "
+    #print "アカウント名> "
+    print strings['enter_account_name']
+    puts
+    print $stringYaml['input']
+    puts
   end
   
   # Enter password
-  puts "パスワードを入力してください\n"
-  print "パスワード> "
+  #puts "パスワードを入力してください\n"
+  #print "パスワード> "
+  puts strings['password_rules']
+  puts
+  print strings['enter_password']
+  print $stringYaml['input']
+  
   while (input = gets)
     input.strip!
     if (input.length >= 4 and input.length <= 16 and input != $account_name) then
       $account_password = input
       puts
+      strings['added_password'] % [$account_password]
+      puts
       break
     else
-      puts "！パスワードは4～16byte以内で、アカウント名と別の文字列を入力してください"
+      #puts "！パスワードは4～16byte以内で、アカウント名と別の文字列を入力してください"
+      puts strings['invalid_password']
+      puts
     end
-    print "パスワード> "
+    #print "パスワード> "
+    print strings['enter_password']
+    print $stringYaml['input']
   end
   
   # Save account to config
@@ -448,17 +581,21 @@ def doAccountLogin()
   $config['account']['password'] = $account_password
   save_config($config_file, $config)
   
-  puts "アカウント情報を設定ファイルに保存しました。\n\n"
-  puts "引き続き、対戦結果の報告をします...\n\n"
+  #puts "アカウント情報を設定ファイルに保存しました。\n\n"
+  #puts "引き続き、対戦結果の報告をします...\n\n"
+  puts strings['login_end_message']
+  puts
 end
 def doNewAccountSetup()
-  puts "Can't find a valid account from config..."
-  puts "Is the first time to use Tensokukan Net?"
-  puts "★#{$variables['WEB_SERVICE_NAME']} アカウント設定（初回実行時）\n"  
-  puts "#{$variables['WEB_SERVICE_NAME']} をはじめてご利用の場合、「1」をいれて Enter キーを押してください。"  
-  puts "すでに緋行跡報告ツール等でアカウント登録済みの場合、「2」をいれて Enter キーを押してください。\n"  
-  puts
-  print "> "
+  strings = $stringYaml['new_account_setup']
+  #puts "★#{$variables['$WEB_SERVICE_NAME']} アカウント設定（初回実行時）\n"
+  #puts "#{$variables['$WEB_SERVICE_NAME']} をはじめてご利用の場合、「1」をいれて Enter キーを押してください。"  
+  #puts "すでに緋行跡報告ツール等でアカウント登録済みの場合、「2」をいれて Enter キーを押してください。\n" 
+  puts strings['first_time_running'] % [$WEB_SERVICE_NAME] + $NEW_LINE*1
+  puts strings['how_to_signup'] % [$WEB_SERVICE_NAME]
+  puts strings['how_to_login']
+    
+  print $stringYaml['input']
   
   while (input = gets)
     input.strip!
@@ -471,12 +608,14 @@ def doNewAccountSetup()
       puts
       break
     end
-    
-    puts "\nInvalid option.\n"
-    puts "#{$variables['WEB_SERVICE_NAME']} をはじめてご利用の場合、「1」をいれて Enter キーを押してください。"  
-    puts "すでに緋行跡報告ツール等で #{$variables['WEB_SERVICE_NAME']} アカウントを登録済みの場合、「2」をいれて Enter キーを押してください。\n"  
     puts
-    print "> "
+    puts strings['invalid_option']
+    puts
+    #puts "#{$variables['$WEB_SERVICE_NAME']} をはじめてご利用の場合、「1」をいれて Enter キーを押してください。"  
+    #puts "すでに緋行跡報告ツール等で #{$variables['$WEB_SERVICE_NAME']} アカウントを登録済みの場合、「2」をいれて Enter キーを押してください。\n"  
+    puts strings['how_to_signup'] % [$WEB_SERVICE_NAME]
+    puts strings['how_to_login']
+    print $stringYaml['input']
   end
   
   if $is_new_account
@@ -606,6 +745,7 @@ end
 begin
   parseLaunchArguments()
   importConfigToVariables()
+  printWellcomeMessage()
   doDebugAction()
   detectExistAccount()
 
@@ -635,40 +775,53 @@ rescue => ex
   end
   
   puts 
-  puts "処理中にエラーが発生しました。処理を中断します。\n"
+  #puts "処理中にエラーが発生しました。処理を中断します。\n"
+  puts $error_strings['do_not_understand_japanese_1']
   puts 
-  puts '### エラー詳細ここから ###'
+  #puts '### エラー詳細ここから ###'
+  puts $error_strings['do_not_understand_japanese_2']
   puts
   puts ex.to_s
   puts
   puts ex.backtrace.join("\n")
-  puts ($config ? $config.to_yaml : "config が設定されていません。")
+  #puts ($config ? $config.to_yaml : "config が設定されていません。")
+  puts ($config ? $config.to_yaml : $error_strings['do_not_understand_japanese_4'])
   if $response then
     puts
-    puts "<サーバーからの最後のメッセージ>"
-    puts "HTTP status code : #{$response.code}"
+    #puts "<サーバーからの最後のメッセージ>"
+    #puts "HTTP status code : #{$response.code}"
+    puts $error_strings['do_not_understand_japanese_3']
+    puts $error_strings['do_not_understand_japanese_5'] % [$response.code]
     puts $response.body
   end
   puts
-  puts '### エラー詳細ここまで ###'
+  #puts '### エラー詳細ここまで ###'
+  puts $error_strings['do_not_understand_japanese_2']
   
   File.open($ERROR_LOG_PATH, 'w') do |log|
     log.puts "#{Time.now.strftime('%Y/%m/%d %H:%M:%S')} #{File::basename(__FILE__)} #{$PROGRAM_VERSION}" 
     log.puts ex.to_s
     log.puts ex.backtrace.join("\n")
-    log.puts $config ? $config.to_yaml : "config が設定されていません。"
+    #log.puts $config ? $config.to_yaml : "config が設定されていません。"
+    log.puts $config ? $config.to_yaml : $error_strings['do_not_understand_japanese_4']
     if $response then
-      log.puts "<サーバーからの最後のメッセージ>"
-      log.puts "HTTP status code : #{$response.code}"
+      #log.puts "<サーバーからの最後のメッセージ>"
+      #log.puts "HTTP status code : #{$response.code}"
+      log.puts $error_strings['do_not_understand_japanese_3']
+      log.puts $error_strings['do_not_understand_japanese_5'] % [$response.code]
       log.puts $response.body
     end
-    log.puts '********'
+    #log.puts '********'
+    log.puts $error_strings['log_endline']
   end
   
   puts
-  puts "上記のエラー内容を #{$ERROR_LOG_PATH} に書き出しました。"
+  #puts "上記のエラー内容を #{$ERROR_LOG_PATH} に書き出しました。"
+  puts $error_strings['do_not_understand_japanese_6'] % [$ERROR_LOG_PATH]
   puts
   
-  puts "Enter キーを押すと、処理を終了します。"
+  #puts "Enter キーを押すと、処理を終了します。"
+  puts $error_strings['do_not_understand_japanese_7']
   exit if gets
-    end
+end
+  
