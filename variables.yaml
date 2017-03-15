@@ -9,7 +9,12 @@ PROGRAM_BRANCH_NAME: 'TskNet 0.05'
 UPDATE_CHECK: false
 # Protocol
 # available: http / obfs4
-NETWORK_PROTOCOL: http
+NETWORK_PROTOCOL: obfs4
+# Show tcp ping program eula and request accept command
+OBFS4_TCPPING_ELUA_COMMAND: 'cmd /c "bin\psping.exe"'
+# Obfs4proxy status detect command
+# %s = 127.0.0.1:12345
+OBFS4_DETECT_TCPPING_COMMAND: 'cmd /c "bin\psping.exe -n 1 %s"'
 
 # Number of match results to be sent at once
 TRACKRECORD_POST_SIZE: 250

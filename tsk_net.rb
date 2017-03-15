@@ -24,6 +24,7 @@ $updateCheck = false # Detect update check
 $is_new_account = false # New account or login
 $is_account_register_finish = false # Detect if there is a account signed up
 $networkProtocol = nil
+$obfs4_ready = false
 
 ### Load config to memory ###
 # Set config file path
@@ -123,7 +124,7 @@ $CLIENT_SITE_URL = "http://#{$env['client']['site']['host']}#{$env['client']['si
 $ACCOUNT_NAME_REGEX = /\A[a-zA-Z0-9_]{1,32}\z/
 $MAIL_ADDRESS_REGEX = /\A[\x01-\x7F]+@(([-a-z0-9]+\.)*[a-z]+|\[\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\])\z/
 
-# Etc
+# Other corss-method variables
 $RECORD_SW_NAME = $variables['RECORD_SW_NAME']
 $DB_TR_TABLE_NAME = $variables['DB_TR_TABLE_NAME']
 $DUPLICATION_LIMIT_TIME_SECONDS = $variables['DUPLICATION_LIMIT_TIME_SECONDS']
@@ -210,6 +211,22 @@ def loadObfs4Config()
   # CLIENT_SITE_URL
   $CLIENT_SITE_URL = "http://#{$env['client_obfs4']['site']['host']}#{$env['client_obfs4']['site']['path']}"
 end
+def detectObfs4proxyStatus()
+  obfs4Env = $env['server_obfs4']['account']
+  obfs4ListendOn = "#{obfs4Env['address']}:#{obfs4Env['port']}"
+  
+  eluaCmd = $variables['OBFS4_TCPPING_ELUA_COMMAND']
+  tcpPingCmd = $variables['OBFS4_DETECT_TCPPING_COMMAND'] % [obfs4ListendOn]
+  
+  eluaResult = %x{"#{eluaCmd}"}
+  tcpPingResult = %x{"#{tcpPingCmd}"}
+  
+  puts tcpPingResult
+  exit # TODO
+end
+def startObfs4proxyProcess()
+
+end
 def importConfigToVariables()
   # The following code seems to read some value from config to variables
   
@@ -227,10 +244,6 @@ def importConfigToVariables()
     
   $updateCheck = $variables['UPDATE_CHECK']
   $networkProtocol = $variables['NETWORK_PROTOCOL']
-    
-  if $networkProtocol.upcase == 'OBFS4'
-    loadObfs4Config()
-  end
 end
 def doDebugAction()
   if $variables['DEBUG_EXIT']
@@ -748,6 +761,11 @@ begin
   printWellcomeMessage()
   doDebugAction()
   detectExistAccount()
+  
+  if $networkProtocol.upcase == 'OBFS4'
+    loadObfs4Config()
+    detectObfs4proxyStatus()
+  end
 
   if $updateCheck
     doUpdateCheck()
