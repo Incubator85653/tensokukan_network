@@ -1,5 +1,6 @@
 # coding: utf-8
 
+require 'open3'
 require 'rubygems'
 require 'nkf'
 require 'net/http'
@@ -158,6 +159,7 @@ end
 def saveConfigFile()
   # Update configuration file
   save_config($config_file, $config)
+  save_config($var_file, $variables)
 end
 def printHTTPcode(response)
   puts "HTTP #{response.code}"
@@ -212,16 +214,32 @@ def loadObfs4Config()
   $CLIENT_SITE_URL = "http://#{$env['client_obfs4']['site']['host']}#{$env['client_obfs4']['site']['path']}"
 end
 def detectObfs4proxyStatus()
+  strings = $stringYaml['obfs4_string']
+  
   obfs4Env = $env['server_obfs4']['account']
   obfs4ListendOn = "#{obfs4Env['address']}:#{obfs4Env['port']}"
   
-  eluaCmd = $variables['OBFS4_TCPPING_ELUA_COMMAND']
+  eulaCmd = $variables['OBFS4_TCPPING_EULA_COMMAND']
   tcpPingCmd = $variables['OBFS4_DETECT_TCPPING_COMMAND'] % [obfs4ListendOn]
   
-  eluaResult = %x{"#{eluaCmd}"}
-  tcpPingResult = %x{"#{tcpPingCmd}"}
+  unless $variables['OBFS4_TCPPING_EULA_STATUS']
+    puts strings['please_accept_tcpping_eula']
+    eulaResult = system(eulaCmd)
+    # Make sure psping exist.
+    if eulaResult != 0
+      puts strings['psping_missing']
+        # TODO
+        # The eula detect method is wrong! Rebuild it!
+      exit
+    else
+      $variables['OBFS4_TCPPING_EULA_STATUS'] = true
+      saveConfigFile()
+    end
+  end
   
-  puts tcpPingResult
+  stdout = Open3.popen3(tcpPingCmd)
+  
+  puts stdout.readlines
   exit # TODO
 end
 def startObfs4proxyProcess()
@@ -764,7 +782,9 @@ begin
   
   if $networkProtocol.upcase == 'OBFS4'
     loadObfs4Config()
-    detectObfs4proxyStatus()
+    while $obfs4_ready == false
+      detectObfs4proxyStatus()
+    end
   end
 
   if $updateCheck

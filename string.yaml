@@ -61,6 +61,9 @@ do_account_login:
     # %s = account_password
     added_password: "Added password: %s"
     login_end_message: "アカウント情報を設定ファイルに保存しました。 \n引き続き、対戦結果の報告をします..."
+obfs4_string:
+    psping_missing: "Psping.exe missing or declined eula. \nExit now."
+    please_accept_tcpping_eula: "Please read and accept the eula."
 error:
     config_file_missing: "Error: one or more config files were missing."
     do_not_understand_japanese_1: "処理中にエラーが発生しました。処理を中断します。"
