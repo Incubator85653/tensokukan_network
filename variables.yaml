@@ -1,68 +1,26 @@
-﻿# Program information
-PROGRAM_VERSION: '0.04'
-PROGRAM_NAME: '天則観報告ツール'
-PROGRAM_BRANCH_NAME: 'TskNet 0.05'
-
-# Environment / configuration
-
-# Update check
-UPDATE_CHECK: false
-# Protocol
-# available: http / obfs4
-NETWORK_PROTOCOL: obfs4
-# Ask user accept psping eula
-OBFS4_TCPPING_EULA_STATUS: false
-OBFS4_TCPPING_PLEASE_ACCEPT_EULA: "Please read and accept the eula."
-# Show tcp ping program eula and request accept command
-OBFS4_TCPPING_EULA_COMMAND: 'bin\psping.exe>nul 2>nul'
-# Obfs4proxy status detect command
-# %s = 127.0.0.1:12345
-OBFS4_DETECT_TCPPING_COMMAND: 'bin\psping.exe -n 1 %s'
-
-# Number of match results to be sent at once
+# 天則観報告ツール設定ファイル
+# かならず文字コードは UTF-8 または UTF-8N で保存してください。
+# メモ帳でも編集・保存できます。
+---
 TRACKRECORD_POST_SIZE: 250
-
-# The match results data whose timestamp is
-# within the seconds, will be regarded as duplicate data
+ERROR_LOG_PATH: error.txt
+UPDATE_CHECK: false
+PROGRAM_BRANCH_NAME: TskNet 0.05
 DUPLICATION_LIMIT_TIME_SECONDS: 2
-
-# Notification when "force insert mode" is required
-PLEASE_RETRY_FORCE_INSERT: "<Please Retry in Force-Insert Mode>"
-
-# Software name
-RECORD_SW_NAME: '天則観'
-# DB match result table name
-DB_TR_TABLE_NAME: 'trackrecord123'
-# Service provider name
-WEB_SERVICE_NAME: 'Tenco!'
-
-# Tensokukan specified profile
-
-# Default HTTP request header for direct connection
+OBFS4_TCPPING_EULA_STATUS: true
+DEFAULT_GAME_ID: 2
+DB_TR_TABLE_NAME: trackrecord123
+PLEASE_RETRY_FORCE_INSERT: <Please Retry in Force-Insert Mode>
+DEFAULT_DATABASE_FILE_PATH: ../*.db
+PROGRAM_NAME: "天則観報告ツール"
+DEBUG_EXIT: false
+WEB_SERVICE_NAME: Tenco!
+OBFS4_TCPPING_BIN: '.\bin\psping.exe'
+OBFS4_DETECT_TCPPING_ARGS: '-n 1 %s'
+OBFS4_TCPPING_PLEASE_ACCEPT_EULA: Please read and accept the eula.
+RECORD_SW_NAME: "天則観"
+OBFS4_TCPPING_EULA_COMMAND: .\bin\psping.exe
+NETWORK_PROTOCOL: obfs4
+PROGRAM_VERSION: "0.04"
 HTTP_REQUEST_HEADER:
 - User-Agent: Tensokukan Report Tool 0.04
-
-# Custom HTTP request header for obfs4 forward server
-# This is a outdated implement
-# May remove in future updates
-
-#HTTP_OBFS4_REQUEST_HEADER:
-#- Host: tenco.info
-#  User-Agent: Tensokukan Report Tool 0.04
-#- Host: static.tenco.info
-#  User-Agent: Tensokukan Report Tool 0.04
-
-# Game code
-DEFAULT_GAME_ID: 2
-# Default db file path
-DEFAULT_DATABASE_FILE_PATH: '../*.db'
-
-# Log file path
-ERROR_LOG_PATH: 'error.txt'
-
-# On build debug option
-
-# DEBUG_EXIT is often used during "exerb".
-# Program will require all reference and exit directly.
-# Once exe generated, set to false to execute program features.
-DEBUG_EXIT: false
