@@ -11,7 +11,7 @@
 /tmp/
 
 # Tensokukan 2017 Resources
-/bin/
+/bin/*.exe
 
 ## Specific to RubyMotion:
 .dat*
