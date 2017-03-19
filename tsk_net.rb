@@ -1,6 +1,7 @@
 # coding: utf-8
 
-require 'open3'
+require './lib/win32/open3'
+include Open3
 require 'rubygems'
 require 'nkf'
 require 'net/http'
@@ -161,13 +162,6 @@ def saveConfigFile()
   save_config($config_file, $config)
   save_config($var_file, $variables)
 end
-def to_boolean(string)
-  if string == false & nil
-    return false
-  else
-    return true
-  end
-end
 def printHTTPcode(response)
   puts "HTTP #{response.code}"
   puts
@@ -220,43 +214,57 @@ def loadObfs4Config()
   # CLIENT_SITE_URL
   $CLIENT_SITE_URL = "http://#{$env['client_obfs4']['site']['host']}#{$env['client_obfs4']['site']['path']}"
 end
+def startObfs4proxyProcess()
+
+end
 def detectObfs4proxyStatus()
   strings = $stringYaml['obfs4_string']
+  puts strings['obfs4proxy_loading']
 
   obfs4Env = $env['server_obfs4']['account']
   obfs4ListendOn = "#{obfs4Env['address']}:#{obfs4Env['port']}"
 
-  eulaCmd = $variables['OBFS4_TCPPING_EULA_COMMAND']
   unless $variables['OBFS4_TCPPING_EULA_STATUS']
     puts strings['please_accept_tcpping_eula']
-    eulaResult = `"#{eulaCmd}"`
+    puts
+    eulaCmd = $variables['OBFS4_TCPPING_BIN_EULA']
+    stdin, stdout, stderr = popen3(eulaCmd)
+    eulaResult = stderr.read
     # Make sure psping exist.
-    if to_boolean(eulaResult) != true
+    if eulaResult.include? eulaCmd
       puts strings['psping_missing']
       exit
     else
+      # TODO
+      # Check the eula status before use this tool.
       $variables['OBFS4_TCPPING_EULA_STATUS'] = true
       saveConfigFile()
-      exit
     end
   end
 
   tcpPingDone = false
+  tcpPingRetryTimes = 0
   while tcpPingDone == false
-    tcpingResult = nil
-    tcpPingBin = $variables['OBFS4_TCPPING_BIN']
-    tcpPingArgs = $variables['OBFS4_DETECT_TCPPING_ARGS'] % [obfs4ListendOn]
+    tcpPingCmd = "#{$variables['OBFS4_TCPPING_BIN'] % [obfs4ListendOn]}"
     ###
     # Ping and get output
-    # TODO
-    ###
-    tcpPingDone = true
-    puts "tcp ping done"
+    stdin, stdout, stderr = popen3(tcpPingCmd)
+    # If return nothing error, that means obfs4 proxy is running.
+    if stderr.read.strip.empty?
+      tcpPingDone = true
+      puts strings['obfs4proxy_working']
+      #TODO
+      # After obfs4 subprocess is done, remove this exit.
+      exit
+    else
+      puts strings['obfs4proxy_timeout']
+      tcpPingRetryTimes = tcpPingRetryTimes + 1
+      if tcpPingRetryTimes == 10
+        puts strings['obfs4proxy_unavailable']
+        exit
+      end
+    end
   end
-  exit
-end
-def startObfs4proxyProcess()
-
 end
 def importConfigToVariables()
   # The following code seems to read some value from config to variables
