@@ -25,4 +25,5 @@
 %rd% %lib%
 %rd% %bin%
 
-pause
+start /wait clean_temps.cmd
+exit

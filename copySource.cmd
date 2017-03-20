@@ -20,4 +20,3 @@ echo A| xcopy %string% %build_dir%
 echo A| xcopy %variables% %build_dir%
 
 echo A| xcopy %main% %build_dir%
-pause

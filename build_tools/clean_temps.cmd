@@ -23,5 +23,4 @@ set del=del /q
 %del% %TskNetExe%
 %del% %TskNetExy%
 
-@REM Exit cmd window shortly.
-timeout /t 5
+exit
