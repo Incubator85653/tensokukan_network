@@ -155,7 +155,7 @@ def printWellcomeMessage()
   puts "#{$stringYaml['wellcome_message']['str_api_version']} #{$variables['PROGRAM_VERSION']}"
   puts "#{$stringYaml['wellcome_message']['str_branch_version']} #{$stringYaml['wellcome_message']['branch_version']}"
   puts "#{$stringYaml['wellcome_message']['str_network_protocol']} #{$networkProtocol.upcase}"
-  puts $NEW_LINE*3
+  puts
 end
 def saveConfigFile()
   # Update configuration file
@@ -214,8 +214,15 @@ def loadObfs4Config()
   # CLIENT_SITE_URL
   $CLIENT_SITE_URL = "http://#{$env['client_obfs4']['site']['host']}#{$env['client_obfs4']['site']['path']}"
 end
-def startObfs4proxyProcess()
+def ManageObfs4proxyProcess(action)
+  obfs4Cmd = nil
+  if action == 'start'
+    obfs4Cmd = $variables['OBFS4_PROXY_START_BIN']
+  elsif action == 'exit'
+    obfs4Cmd = $variables['OBFS4_PROXY_EXIT_BIN']
+  end
 
+  stdin, stdout, stderr = popen3(obfs4Cmd)
 end
 def detectObfs4proxyStatus()
   strings = $stringYaml['obfs4_string']
@@ -252,19 +259,18 @@ def detectObfs4proxyStatus()
     # If return nothing error, that means obfs4 proxy is running.
     if stderr.read.strip.empty?
       tcpPingDone = true
+      $obfs4_ready = true
       puts strings['obfs4proxy_working']
-      #TODO
-      # After obfs4 subprocess is done, remove this exit.
-      exit
     else
       puts strings['obfs4proxy_timeout']
       tcpPingRetryTimes = tcpPingRetryTimes + 1
-      if tcpPingRetryTimes == 10
+      if tcpPingRetryTimes == $variables['OBFS4_TCPPING_RETRY_TIMES']
         puts strings['obfs4proxy_unavailable']
         exit
       end
     end
   end
+  puts
 end
 def importConfigToVariables()
   # The following code seems to read some value from config to variables
@@ -780,17 +786,34 @@ def doUploadData()
     end
   end
 end
-def printExitMessage()
+def DoExitActions()
+  strings = $stringYaml['exit_message']
+
+  # Close obfs4proxy client
+  if $networkProtocol.upcase == 'OBFS4'
+    ManageObfs4proxyProcess('exit')
+  end
+
   if $is_warning_exist then
-    puts "報告処理は正常に終了しましたが、警告メッセージがあります。"
-    puts "出力結果をご確認ください。"
-    puts
-    puts "Enter キーを押すと、処理を終了します。"
+    #puts "報告処理は正常に終了しましたが、警告メッセージがあります。"
+    #puts "出力結果をご確認ください。"
+    #puts
+    #puts "Enter キーを押すと、処理を終了します。"
+    puts strings['yes_error']
+
     exit if gets
     puts
   else
-    puts "報告処理が正常に終了しました。"
+    #puts "報告処理が正常に終了しました。"
+    puts strings['no_error']
+    puts
   end
+
+  # Make a delay, allow user to check their record for few seconds
+  delayTime = $variables['WAIT_SECONDS_BEFORE_EXIT']
+
+  puts strings['wait_for_few_seconds'] % [delayTime]
+  sleep delayTime
 end
 
 # Start
@@ -803,6 +826,8 @@ begin
 
   if $networkProtocol.upcase == 'OBFS4'
     loadObfs4Config()
+    ManageObfs4proxyProcess('start')
+
     while $obfs4_ready == false
       detectObfs4proxyStatus()
     end
@@ -824,7 +849,7 @@ begin
   doUploadData()
 
   # Exit message output
-  printExitMessage()
+  DoExitActions()
 
 ### Overall error handling ###
 rescue => ex
