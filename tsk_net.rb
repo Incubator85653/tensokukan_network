@@ -134,6 +134,7 @@ $TRACKRECORD_POST_SIZE = $variables['TRACKRECORD_POST_SIZE']
 $PLEASE_RETRY_FORCE_INSERT = $variables['PLEASE_RETRY_FORCE_INSERT']
 $WEB_SERVICE_NAME = $variables['WEB_SERVICE_NAME']
 $error_strings = $stringYaml['error']
+$http_timeout = $variables['HTTP_REQUEST_TIMEOUT_SECONDS']
 # Match result
 $trackrecord = []
 # Meaning unknown variables, keep original comments
@@ -262,11 +263,16 @@ def detectObfs4proxyStatus()
       $obfs4_ready = true
       puts strings['obfs4proxy_working']
     else
-      puts strings['obfs4proxy_timeout']
+      if tcpPingRetryTimes > $variables['OBFS4_TCPPING_RETRY_IGNORE_OUTPUT_TIMES']
+        puts strings['obfs4proxy_timeout']
+      end
+
       tcpPingRetryTimes = tcpPingRetryTimes + 1
       if tcpPingRetryTimes == $variables['OBFS4_TCPPING_RETRY_TIMES']
         puts strings['obfs4proxy_unavailable']
-        exit
+        puts
+        $is_warning_exist = true
+        DoExitActions()
       end
     end
   end
@@ -528,6 +534,7 @@ def doAccountSignUp()
     # Upload to server
     $response = nil
     http = Net::HTTP.new($SERVER_ACCOUNT_ADDRESS, $SERVER_ACCOUNT_PORT)
+    http.read_timeout = $http_timeout
     http.start do |s|
       $response = s.post($SERVER_ACCOUNT_PATH, account_xml.to_s, $SERVER_ACCOUNT_HEADER)
     end
@@ -691,6 +698,7 @@ def detectUploadAllMode()
     puts "GET http://#{$SERVER_TRACK_RECORD_ADDRESS}#{$SERVER_LAST_TRACK_RECORD_PATH}?game_id=#{$game_id}&account_name=#{$account_name}"
 
     http = Net::HTTP.new($SERVER_LAST_TRACK_RECORD_ADDRESS, $SERVER_LAST_TRACK_RECORD_PORT)
+    http.read_timeout = $http_timeout
     $response = nil
     http.start do |s|
       $response = s.get("#{$SERVER_LAST_TRACK_RECORD_PATH}?game_id=#{$game_id}&account_name=#{$account_name}", $SERVER_LAST_TRACK_RECORD_HEADER)
@@ -706,7 +714,15 @@ def detectUploadAllMode()
         puts "サーバーには対戦結果未登録です"
       end
     else
-      raise "最終対戦時刻の取得時にサーバーエラーが発生しました。処理を中断します。"
+      #raise "最終対戦時刻の取得時にサーバーエラーが発生しました。処理を中断します。"
+      strings = $stringYaml['error']
+      puts strings['connection_failed_latest_upload_time']
+      puts
+      puts strings['connection_failed']
+      puts
+
+      $is_warning_exist = true
+      DoExitActions()
     end
 
   else
@@ -757,6 +773,7 @@ def doUploadData()
 
       # And then send to server
       http = Net::HTTP.new($SERVER_TRACK_RECORD_ADDRESS, $SERVER_LAST_TRACK_RECORD_PORT)
+      http.read_timeout = $http_timeout
       http.start do |s|
         $response = s.post($SERVER_TRACK_RECORD_PATH, trackrecord_xml_string, $SERVER_LAST_TRACK_RECORD_HEADER)
       end
@@ -801,8 +818,8 @@ def DoExitActions()
     #puts "Enter キーを押すと、処理を終了します。"
     puts strings['yes_error']
 
-    exit if gets
-    puts
+    gets
+    exit
   else
     #puts "報告処理が正常に終了しました。"
     puts strings['no_error']
@@ -814,6 +831,7 @@ def DoExitActions()
 
   puts strings['wait_for_few_seconds'] % [delayTime]
   sleep delayTime
+  exit
 end
 
 # Start
