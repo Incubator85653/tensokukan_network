@@ -74,6 +74,8 @@ obfs4_string:
     psping_missing: "TCP ping tool missing. \nExit now."
     please_accept_tcpping_eula: "Please read and accept the TCP ping tool EULA."
 error:
+    connection_failed: "Connection failed, check your internet connection. \nOtherwize the server maybe not available. \n\nIf you're using obfs4 protocol, \ntry to use alternative proxy server."
+    connection_failed_latest_upload_time: "最終対戦時刻の取得時にサーバーエラーが発生しました。処理を中断します。"
     config_file_missing: "Error: one or more config files were missing."
     do_not_understand_japanese_1: "処理中にエラーが発生しました。処理を中断します。"
     do_not_understand_japanese_2: '### エラー詳細ここから ###'
