@@ -6,6 +6,11 @@
     branch_name: "天則観報告ツール"
     branch_version: "Build 2"
 # This is a symbol used to simulate shell input symbol.
+exit_message:
+    yes_error: "報告処理は正常に終了しましたが、警告メッセージがあります。 \n出力結果をご確認ください。 \n\nEnter キーを押すと、処理を終了します。"
+    no_error: "報告処理が正常に終了しました。"
+    # %s = variables['WAIT_SECONDS_BEFORE_EXIT']
+    wait_for_few_seconds: "Program completed. Exit after %s seconds..."
 input: "> "
 new_account_setup:
     # %s = WEB_SERVICE_NAME
