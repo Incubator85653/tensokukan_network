@@ -1,0 +1,11 @@
+{
+    "role": "client",
+    "state": ".",
+    "local": "127.0.0.1:26420",
+    "server": "tenco.info.americansdyg.com:26420",
+    "ptexec": "obfs4proxy-4jvg5d -logLevel=ERROR -enableLogging=true",
+    "ptname": "obfs4",
+    "ptargs": "cert=0aVmq2r2fj3LwBv/f6Zo7p8ymG/W8XkOR6gttzcEgmT/mNPW8pX9Ic4BKHWwzIlRn6Drew;iat-mode=0",
+    "ptserveropt": "",
+    "ptproxy": ""
+}
