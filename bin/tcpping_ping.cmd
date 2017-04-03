@@ -1,5 +1,5 @@
-@set pingBin=bin\psping.exe
-@set pingAddr=%1
+@set pingBin=bin\tcping.exe
+@set pingAddr=%1 %2
 
 @set pingArgs=-n 1 %pingAddr%
 

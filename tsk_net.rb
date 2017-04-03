@@ -230,15 +230,21 @@ def detectObfs4proxyStatus()
   puts strings['obfs4proxy_loading']
 
   obfs4Env = $env['server_obfs4']['account']
-  obfs4ListendOn = "#{obfs4Env['address']}:#{obfs4Env['port']}"
+  obfs4ListendOn = "#{obfs4Env['address']} #{obfs4Env['port']}"
 
   unless $variables['OBFS4_TCPPING_EULA_STATUS']
+    #TODO
+    # The EULA is not show to user in this version.
+    # Add EULA before publish.
+    # EULA detect is currently used by check tcpping program exist or not.
     puts strings['please_accept_tcpping_eula']
     puts
     eulaCmd = $variables['OBFS4_TCPPING_BIN_EULA']
     stdin, stdout, stderr = popen3(eulaCmd)
     eulaResult = stderr.read
     # Make sure psping exist.
+    # Find this line:
+    # 'abc' is not recognized as an internal or external command
     if eulaResult.include? eulaCmd
       puts strings['psping_missing']
       exit
@@ -258,22 +264,22 @@ def detectObfs4proxyStatus()
     # Ping and get output
     stdin, stdout, stderr = popen3(tcpPingCmd)
     # If return nothing error, that means obfs4 proxy is running.
-    if stderr.read.strip.empty?
-      tcpPingDone = true
-      $obfs4_ready = true
-      puts strings['obfs4proxy_working']
-    else
+    if stdout.read.include? $variables['OBFS4_TCPPING_FAILED_TEXT']
       if tcpPingRetryTimes > $variables['OBFS4_TCPPING_RETRY_IGNORE_OUTPUT_TIMES']
         puts strings['obfs4proxy_timeout']
       end
+    else
+      tcpPingDone = true
+      $obfs4_ready = true
+      puts strings['obfs4proxy_working']
+    end
 
-      tcpPingRetryTimes = tcpPingRetryTimes + 1
-      if tcpPingRetryTimes == $variables['OBFS4_TCPPING_RETRY_TIMES']
-        puts strings['obfs4proxy_unavailable']
-        puts
-        $is_warning_exist = true
-        DoExitActions()
-      end
+    tcpPingRetryTimes = tcpPingRetryTimes + 1
+    if tcpPingRetryTimes == $variables['OBFS4_TCPPING_RETRY_TIMES']
+      puts strings['obfs4proxy_unavailable']
+      puts
+      $is_warning_exist = true
+      DoExitActions()
     end
   end
   puts

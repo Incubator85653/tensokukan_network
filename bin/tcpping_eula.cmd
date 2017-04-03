@@ -1,4 +1,4 @@
-@set pingBin=bin\psping.exe
+@set pingBin=bin\tcping.exe
 
 @REM Show EULA and do nothing
-@%pingBin%>nul 2>nul
+@%pingBin%
