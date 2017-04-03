@@ -303,8 +303,8 @@ def importConfigToVariables()
   $networkProtocol = $variables['NETWORK_PROTOCOL']
 end
 def doDebugAction()
-  if $variables['DEBUG_EXIT']
-    puts "Debug Action: Exit."
+  if $variables['BUILD_EXIT']
+    puts "Debug Action: BUILD_EXIT."
     exit
   end
 end
