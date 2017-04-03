@@ -12,6 +12,10 @@
 
 # Tensokukan 2017 Resources
 /bin/*.exe
+/bin/*.log
+
+# Tensokukan 2017 dist
+/build_tools/dist/
 
 ## Specific to RubyMotion:
 .dat*
