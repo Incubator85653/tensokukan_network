@@ -265,6 +265,11 @@ def detectObfs4proxyStatus()
     if stderr.read.strip.empty?
       tcpPingDone = true
       $obfs4_ready = true
+	  
+	  # Wait until obfs4proxy fully loaded
+	  # On some slow devices, even if tcpping responed, connection can't create
+	  # 3 seconds should be fine, but moving it into config
+	  sleep $variables['OBFS4_PROXY_WAIT_LOAD']
       puts strings['obfs4proxy_working']
     else
       if tcpPingRetryTimes > $variables['OBFS4_TCPPING_RETRY_IGNORE_OUTPUT_TIMES']
