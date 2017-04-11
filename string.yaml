@@ -71,8 +71,9 @@ obfs4_string:
     obfs4proxy_working: "Obfs4proxy is working."
     obfs4proxy_timeout: "Obfs4proxy timeout, retrying..."
     obfs4proxy_unavailable: "Can't connect to obfs4proxy, exit now."
-    psping_missing: "TCP ping tool missing. \nExit now."
+    tcpping_missing: "TCP ping tool missing. \nExit now."
     please_accept_tcpping_eula: "Please read and accept the TCP ping tool EULA."
+    press_enter_key: "Press Enter to countienue."
 error:
     connection_failed: "Connection failed, check your internet connection. \nOtherwize the server maybe not available. \n\nIf you're using obfs4 protocol, \ntry to use alternative proxy server."
     connection_failed_latest_upload_time: "最終対戦時刻の取得時にサーバーエラーが発生しました。処理を中断します。"
