@@ -1,4 +1,13 @@
-@set pingBin=bin\psping.exe
+@cd /d %~dp0
 
-@REM Show EULA and do nothing
-@%pingBin%>nul 2>nul
+@set pingBin=tcping.exe
+@echo --------------------------------------------------------------
+@echo tcping by Eli Fulkerson
+@echo Please see http://www.elifulkerson.com/projects/ for updates.
+@echo --------------------------------------------------------------
+
+@REM Show EULA and test if bin exist.
+
+@cd bin >nul 2>nul
+@%pingBin% >nul
+@cd .. >nul 2>nul
