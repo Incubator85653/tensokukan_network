@@ -237,23 +237,22 @@ def detectObfs4proxyStatus()
     puts
     eulaCmd = $variables['OBFS4_TCPPING_BIN_EULA']
     stdin, stdout, stderr = popen3(eulaCmd)
-	eulaContents = stdout.read
+    eulaContents = stdout.read
     eulaResult = stderr.read
-	puts eulaContents
-    # Make sure psping exist.
+    puts eulaContents
+    # Make sure tcpping exist.
     if eulaResult.include? eulaCmd
       puts strings['tcpping_missing']
       exit
     else
-      # TODO
-      # Check the eula status before use this tool.
-	  puts strings['press_enter_key']
-	  gets
+      puts strings['press_enter_key']
+      gets
       $variables['OBFS4_TCPPING_EULA_STATUS'] = true
       saveConfigFile()
     end
   end
 
+  # Detect obfs4proxy process
   tcpPingDone = false
   tcpPingRetryTimes = 0
   while tcpPingDone == false
@@ -265,11 +264,10 @@ def detectObfs4proxyStatus()
     if stderr.read.strip.empty?
       tcpPingDone = true
       $obfs4_ready = true
-	  
-	  # Wait until obfs4proxy fully loaded
-	  # On some slow devices, even if tcpping responed, connection can't create
-	  # 3 seconds should be fine, but moving it into config
-	  sleep $variables['OBFS4_PROXY_WAIT_LOAD']
+      # Wait until obfs4proxy fully loaded
+      # On some slow devices, even if tcpping responed, connection can't create
+      # 3 seconds should be fine, but moving it into config
+      sleep $variables['OBFS4_PROXY_WAIT_LOAD']
       puts strings['obfs4proxy_working']
     else
       if tcpPingRetryTimes > $variables['OBFS4_TCPPING_RETRY_IGNORE_OUTPUT_TIMES']
