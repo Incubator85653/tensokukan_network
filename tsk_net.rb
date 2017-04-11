@@ -237,14 +237,18 @@ def detectObfs4proxyStatus()
     puts
     eulaCmd = $variables['OBFS4_TCPPING_BIN_EULA']
     stdin, stdout, stderr = popen3(eulaCmd)
+	eulaContents = stdout.read
     eulaResult = stderr.read
+	puts eulaContents
     # Make sure psping exist.
     if eulaResult.include? eulaCmd
-      puts strings['psping_missing']
+      puts strings['tcpping_missing']
       exit
     else
       # TODO
       # Check the eula status before use this tool.
+	  puts strings['press_enter_key']
+	  gets
       $variables['OBFS4_TCPPING_EULA_STATUS'] = true
       saveConfigFile()
     end
