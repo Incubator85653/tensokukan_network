@@ -1,42 +1,27 @@
-﻿# Program information
-PROGRAM_VERSION: '0.04'
-PROGRAM_NAME: '天則観報告ツール'
-
-# Environment / configuration
-
-# Number of match results to be sent at once
-TRACKRECORD_POST_SIZE: 250
-
-# The match results data whose timestamp is
-# within the seconds, will be regarded as duplicate data
-DUPLICATION_LIMIT_TIME_SECONDS: 2
-
-# Notification when "force insert mode" is required
-PLEASE_RETRY_FORCE_INSERT: "<Please Retry in Force-Insert Mode>"
-
-# Software name
-RECORD_SW_NAME: '天則観'
-# DB match result table name
-DB_TR_TABLE_NAME: 'trackrecord123'
-# Service provider name
-WEB_SERVICE_NAME: 'Tenco!'
-
-# Tensokukan specified profile
-
-# Default HTTP request header for direct connection
-HTTP_REQUEST_HEADER:
-- User-Agent: Tensokukan Report Tool 0.04
-# Custom HTTP request header for obfs4 forward server
-HTTP_OBFS4_REQUEST_HEADER:
-- Host: tenco.info
-  User-Agent: Tensokukan Report Tool 0.04
-- Host: static.tenco.info
-  User-Agent: Tensokukan Report Tool 0.04
-
-# Game code
+DB_TR_TABLE_NAME: trackrecord123
+DEBUG_EXIT: true
+DEFAULT_DATABASE_FILE_PATH: ../*.db
 DEFAULT_GAME_ID: 2
-# Default db file path
-DEFAULT_DATABASE_FILE_PATH: '../*.db'
-
-# Log file path
-ERROR_LOG_PATH: 'error.txt'
+DUPLICATION_LIMIT_TIME_SECONDS: 2
+ERROR_LOG_PATH: error.txt
+HTTP_REQUEST_HEADER:
+  - User-Agent: Tensokukan Report Tool 0.04
+HTTP_REQUEST_TIMEOUT_SECONDS: 5
+NETWORK_PROTOCOL: obfs4
+OBFS4_PROXY_EXIT_BIN: .\bin\quitAfter.cmd
+OBFS4_PROXY_START_BIN: .\bin\startBefore.cmd
+OBFS4_PROXY_WAIT_LOAD: 3
+OBFS4_TCPPING_BIN: .\bin\tcpping_ping.cmd %s
+OBFS4_TCPPING_BIN_EULA: .\bin\tcpping_eula.cmd
+OBFS4_TCPPING_EULA_STATUS: false
+OBFS4_TCPPING_RETRY_TIMES: 10
+OBFS4_TCPPING_RETRY_IGNORE_OUTPUT_TIMES: 2
+PLEASE_RETRY_FORCE_INSERT: <Please Retry in Force-Insert Mode>
+PROGRAM_BRANCH_NAME: TskNet 0.05
+PROGRAM_NAME: 天則観報告ツール
+PROGRAM_VERSION: '0.04'
+RECORD_SW_NAME: 天則観
+TRACKRECORD_POST_SIZE: 250
+UPDATE_CHECK: false
+WAIT_SECONDS_BEFORE_EXIT: 5
+WEB_SERVICE_NAME: Tenco!

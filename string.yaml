@@ -1,0 +1,90 @@
+﻿wellcome_message: 
+    str_api_version: "API version:"
+    str_branch_version: "Branch version:"
+    str_network_protocol: "Network protocol:"
+    
+    branch_name: "天則観報告ツール"
+    branch_version: "Build 2"
+# This is a symbol used to simulate shell input symbol.
+exit_message:
+    yes_error: "報告処理は正常に終了しましたが、警告メッセージがあります。 \n出力結果をご確認ください。 \n\nEnter キーを押すと、処理を終了します。"
+    no_error: "報告処理が正常に終了しました。"
+    # %s = variables['WAIT_SECONDS_BEFORE_EXIT']
+    wait_for_few_seconds: "Program completed. Exit after %s seconds..."
+input: "> "
+new_account_setup:
+    # %s = WEB_SERVICE_NAME
+    first_time_running: "★%s アカウント設定（初回実行時）"
+    # %s = WEB_SERVICE_NAME
+    how_to_signup: "%s をはじめてご利用の場合、「1」をいれて Enter キーを押してください。"
+    how_to_login: "すでに緋行跡報告ツール等でアカウント登録済みの場合、「2」をいれて Enter キーを押してください。"
+    invalid_option: "Invalid option."
+#
+do_account_signup:
+    # %s = WEB_SERVICE_NAME
+    new_account_signup: "★新規 %s アカウント登録"
+    signup_description: "希望アカウント名を入力してください \nアカウント名はURLの一部として使用されます。"
+    enter_account_name: "希望アカウント名"
+    account_name_rules: "！希望アカウント名は半角英数とアンダースコア_のみで、32文字以内で入力してください"
+    # %s = account_name
+    added_account: "Added account: %s"
+    password_rules: "パスワードを入力してください\n（使用文字制限なし。4～16byte以内。アカウント名と同一禁止。）"
+    enter_password: "パスワード"
+    pwd_same_as_account: "Password can't be the same as account."
+    # %s = account_password
+    added_password: "Added password: %s"
+    confirm_password: "パスワード（確認）"
+    password_mismatch: "！パスワードが一致しません"
+    password_confirmed: "Password confirmed."
+    email_rules: "メールアドレスを入力してください（入力は任意） \n※パスワードを忘れたときの連絡用にのみ使用します。 \n※記入しない場合、パスワードの連絡はできません。"
+    enter_email: "メールアドレス"
+    skip_email: "メールアドレスは登録しません。"
+    skip_email_disabled: "You must provide an email address to sign up."
+    email_invalid: "！メールアドレスは正しい形式で、256byte以内にて入力してください"
+    # %s = account_mail_address
+    added_email: "Added email address: %s"
+    confirm_info: "Checkout these account information:"
+    start_signup: "Press Enter to confirm these information and sign up."
+    signup_requesting: "サーバーにアカウントを登録しています..."
+    signup_server_response: "サーバーからのお返事"
+    signup_success: "アカウント情報を設定ファイルに保存しました。 \nサーバーからのお返事の内容をご確認ください。\n \nEnter キーを押すと、続いて対戦結果の報告をします..."
+    signup_end_message: "引き続き、対戦結果の報告をします..."
+    signup_failed: "もう一度アカウント登録をやり直します...\nPress Enter to retry."
+#
+do_account_login:
+    account_edit: "★設定ファイル編集"
+    # %s = WEB_SERVICE_NAME, %s = WEB_SERVICE_NAME, %s = WEB_SERVICE_NAME
+    edit_description: "%s アカウント名とパスワードを設定します \n※アカウント名とパスワードが分からない場合、ご利用の%sクライアント（緋行跡報告ツール等）の\"config.yaml\"で確認できます \n\nお持ちの %s アカウント名を入力してください"
+    # %s = WEB_SERVICE_NAME
+    enter_account_name: "アカウント名"
+    account_name_rules: "！アカウント名は半角英数とアンダースコア_のみで、32文字以内で入力してください"
+    # %s = account_name
+    added_account: "Added account: %s"
+    password_rules: "パスワードを入力してください"
+    enter_password: "パスワード"
+    invalid_password: "！パスワードは4～16byte以内で、アカウント名と別の文字列を入力してください"
+    # %s = account_password
+    added_password: "Added password: %s"
+    login_end_message: "アカウント情報を設定ファイルに保存しました。 \n引き続き、対戦結果の報告をします..."
+obfs4_string:
+    obfs4proxy_loading: "Loading obfs4proxy..."
+    obfs4proxy_working: "Obfs4proxy is working."
+    obfs4proxy_timeout: "Obfs4proxy timeout, retrying..."
+    obfs4proxy_unavailable: "Can't connect to obfs4proxy, exit now."
+    tcpping_missing: "TCP ping tool missing. \nExit now."
+    please_accept_tcpping_eula: "Please read and accept the TCP ping tool EULA."
+    press_enter_key: "Press Enter to countienue."
+error:
+    connection_failed: "Connection failed, check your internet connection. \nOtherwize the server maybe not available. \n\nIf you're using obfs4 protocol, \ntry to use alternative proxy server."
+    connection_failed_latest_upload_time: "最終対戦時刻の取得時にサーバーエラーが発生しました。処理を中断します。"
+    config_file_missing: "Error: one or more config files were missing."
+    do_not_understand_japanese_1: "処理中にエラーが発生しました。処理を中断します。"
+    do_not_understand_japanese_2: '### エラー詳細ここから ###'
+    do_not_understand_japanese_3: "<サーバーからの最後のメッセージ>"
+    do_not_understand_japanese_4: "config が設定されていません。"
+    # %s = response.code
+    do_not_understand_japanese_5: "HTTP status code: %s"
+    log_endline: '********'
+    #%s = ERROR_LOG_PATH
+    do_not_understand_japanese_6: "上記のエラー内容を %s に書き出しました。"
+    do_not_understand_japanese_7: "Enter キーを押すと、処理を終了します。"
