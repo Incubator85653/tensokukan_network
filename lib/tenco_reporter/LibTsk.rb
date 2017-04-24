@@ -577,4 +577,12 @@ module LibTsk
       puts
     end
   end
+  module Debug
+    def doDebugAction()
+      if $variables['BUILD_EXIT']
+        puts "Build Action: Exit."
+        exit
+      end
+    end
+  end
 end
